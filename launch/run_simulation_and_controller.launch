@@ -5,12 +5,12 @@
     <arg name="paused" value="false"/>
   </include>
 
-  <rosparam file="$(find simple_chassis_controller)/config/controllers.yaml" command="load"/>
-  <!-- load the controllers -->
-  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-        output="screen" args="
-        controller/simple_chassis_controller
-        controller/joint_state_controller
-  "/>
+<!--  <rosparam file="$(find simple_chassis_controller)/config/controllers.yaml" command="load"/>-->
+<!--  &lt;!&ndash; load the controllers &ndash;&gt;-->
+<!--  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"-->
+<!--        output="screen" args="-->
+<!--        controller/simple_chassis_controller-->
+<!--        controller/joint_state_controller-->
+<!--  "/>-->
 
 </launch>

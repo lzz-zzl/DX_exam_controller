@@ -2,8 +2,8 @@
 // Created by root on 2026/9/22.
 //
 
-#ifndef SRC_OMNI_ODOM_H
-#define SRC_OMNI_ODOM_H
+#ifndef SRC_Mecanum_ODOM_H
+#define SRC_Mecanum_ODOM_H
 
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -14,14 +14,14 @@
 #include <sensor_msgs/Imu.h>
 #include <mutex>
 
-class OmniOdom {
+class MecanumOdom {
 public:
     bool imu_filter_en = false;
     std::string imu_topic;
 
     void init();
 
-    OmniOdom(double init_x = 0, double init_y = 0, double init_yaw = 0);
+    MecanumOdom(double init_x = 0, double init_y = 0, double init_yaw = 0);
 
     void update(double chassis_radius, double chawheel_radius,
                 const std::vector<hardware_interface::JointHandle> &joint_handles,
@@ -72,4 +72,4 @@ private:
 };
 
 
-#endif //SRC_OMNI_ODOM_H
+#endif //SRC_Mecanum_ODOM_H

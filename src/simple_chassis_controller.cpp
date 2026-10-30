@@ -6,39 +6,51 @@
 #include <pluginlib/class_list_macros.hpp>
 
 namespace simple_chassis_controller {
-bool SimpleChassisController::init(hardware_interface::EffortJointInterface *effort_joint_interface,
-                                   ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) {
-  front_left_joint_ =
-      effort_joint_interface->getHandle("left_front_wheel_joint");
-  front_right_joint_ =
-      effort_joint_interface->getHandle("right_front_wheel_joint");
-  back_left_joint_ = effort_joint_interface->getHandle("left_back_wheel_joint");
-  back_right_joint_ =
-      effort_joint_interface->getHandle("right_back_wheel_joint");
+    bool SimpleChassisController::init(hardware_interface::EffortJointInterface *effort_joint_interface,
+                                       ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) {
+        front_left_joint_ = effort_joint_interface->getHandle("left_front_wheel_joint");
+        front_right_joint_ = effort_joint_interface->getHandle("right_front_wheel_joint");
+        back_left_joint_ = effort_joint_interface->getHandle("left_back_wheel_joint");
+        back_right_joint_ = effort_joint_interface->getHandle("right_back_wheel_joint");
 
-  return true;
-}
+        controller_nh.param("wheel_base", wheel_base, 5.0);
 
-void SimpleChassisController::update(const ros::Time &time, const ros::Duration &period) {
-  double tau = 0.2;  // torque
-  // NOTE: DON'T COPY THESE NAIVE TESTING CODES !!! USE INVERSE KINEMATICS !!!
-  // NOTE: DON'T COPY THESE NAIVE TESTING CODES !!! USE INVERSE KINEMATICS !!!
-  // NOTE: DON'T COPY THESE NAIVE TESTING CODES !!! USE INVERSE KINEMATICS !!!
-  static double cmd_[6][4] = {{tau, tau, tau, tau}, //  forward
-                              {-2 * tau, -2 * tau, -2 * tau, -2 * tau}, //  backward
-                              {-tau, tau, tau, -tau}, //  left
-                              {2 * tau, -2 * tau, -2 * tau, 2 * tau}, //  right
-                              {2 * tau, -2 * tau, 2 * tau, -2 * tau}, //  clockwise
-                              {-tau, tau, -tau, tau}};  //  counterclockwise
-  if ((time - last_change_).toSec() > 2) {
-    state_ = (state_ + 1) % 6;
-    last_change_ = time;
-  }
-  front_left_joint_.setCommand(cmd_[state_][0]);
-  front_right_joint_.setCommand(cmd_[state_][1]);
-  back_left_joint_.setCommand(cmd_[state_][2]);
-  back_right_joint_.setCommand(cmd_[state_][3]);
+
+        cmd_vel_sub_ = controller_nh.subscribe<geometry_msgs::Twist>(
+            "cmd_vel", 1, &SimpleChassisController::cmdVelCallback, this);
+        debug_sub_ = controller_nh.subscribe(
+                    "debug", 1, &SimpleChassisController::debugCallback, this);
+
+        ROS_INFO("[SimpleChassisController] 初始化成功");
+        return true;
+    }
+
+    void SimpleChassisController::starting(const ros::Time & /*time*/) {
+
+    }
+
+    void SimpleChassisController::update(const ros::Time &time, const ros::Duration &period) {
+        if (force_col) {
+
+        }else {
+            front_left_vel_target  = cmd_vel_target.linear.x - cmd_vel_target.linear.y - cmd_vel_target.angular.z*wheel_base;
+            front_right_vel_target = cmd_vel_target.linear.x + cmd_vel_target.linear.y - cmd_vel_target.angular.z*wheel_base;
+            back_left_vel_target   = cmd_vel_target.linear.x + cmd_vel_target.linear.y + cmd_vel_target.angular.z*wheel_base;
+            back_right_vel_target  = cmd_vel_target.linear.x - cmd_vel_target.linear.y + cmd_vel_target.angular.z*wheel_base;
+
+        }
+
+
+
+    }
+
+    void SimpleChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg) {
+        cmd_vel_target = *msg;
+        last_cmd_time_ = ros::Time::now();
+    }
+
+
 }
 
 PLUGINLIB_EXPORT_CLASS(simple_chassis_controller::SimpleChassisController, controller_interface::ControllerBase)
-}
+

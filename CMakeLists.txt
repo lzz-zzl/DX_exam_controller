@@ -115,7 +115,7 @@ roslint_cpp()
 
 add_library(simple_chassis_controller_plugins
         src/simple_chassis_controller.cpp
-        src/omni_odom.cpp
+        src/Mecanum_odom.cpp
 )
 target_link_libraries(simple_chassis_controller_plugins ${catkin_LIBRARIES})
 add_dependencies(simple_chassis_controller_plugins ${catkin_EXPORTED_TARGETS})
@@ -128,6 +128,19 @@ install(TARGETS simple_chassis_controller_plugins
 
 install(FILES simple_chassis_controller_plugins_plugin.xml
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+# 发送
+add_executable(chassis_cmd_handle src/chassis_cmd_handle.cpp
+)
+target_include_directories( chassis_cmd_handle PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${catkin_INCLUDE_DIRS}
+)
+add_dependencies(chassis_cmd_handle ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(chassis_cmd_handle
+        ${catkin_LIBRARIES}
 )
 
 
