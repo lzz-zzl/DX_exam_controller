@@ -23,6 +23,7 @@
   <depend>controller_manager</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>control_toolbox</depend>
 
 
   <export>

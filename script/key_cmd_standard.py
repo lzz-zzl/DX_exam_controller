@@ -2,11 +2,12 @@
 import rospy
 from pip._internal.operations.build import wheel
 from std_msgs.msg import Float64MultiArray
+from geometry_msgs.msg import Twist
 from pynput import keyboard
 
 # ============ 速度/目标参数 ============
-vx = 4      # 前进/后退速度
-vy = 4      # 左移/右移速度
+vx = 300      # 前进/后退速度
+vy = 300      # 左移/右移速度
 wz = 10.0      # 角速度（rad/s），对应 vel_az_rela
 
 # 云台目标每帧增量（20Hz 下，每秒 = 20 × 这个值）
@@ -33,7 +34,7 @@ def on_press(key):
     try:
         if key.char in ['w', 's', 'a', 'd', 'q', 'e',
                         't', 'g', 'f', 'h','y',
-                        '7', '4', '1', '8', '5', '2',',','.','0'
+                        '7', '4', '1', '8', '5', '2',',','.','0',
                         '[',']','o','p'
                         'c','v','b','n']:
             current_keys.add(key.char)
@@ -83,12 +84,14 @@ def main():
 
     rospy.init_node('keyboard_teleop')
     pub = rospy.Publisher('/standard_cmd', Float64MultiArray, queue_size=1)
+    cmd_vel_pub = rospy.Publisher('/controller/simple_chassis_controller/cmd_vel', Twist, queue_size=1)
     rate = rospy.Rate(20)
 
     listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()
 
     msg = Float64MultiArray()
+    cmd_vel_msg = Twist()
 
     rospy.loginfo("[PID] init  Kp = %.3f | Ki = %.3f | Kd = %.3f",
                   yaw_Kp, yaw_Ki, yaw_Kd)
@@ -140,9 +143,18 @@ def main():
         ]
         pub.publish(msg)
 
+        cmd_vel_msg.linear.x = vel_x_rela
+        cmd_vel_msg.linear.y = vel_y_rela
+        # cmd_vel_msg.linear.x = 300
+        # cmd_vel_msg.linear.y = 300
+        cmd_vel_msg.linear.z = 0.0
+        cmd_vel_msg.angular.x = 0.0
+        cmd_vel_msg.angular.y = 0.0
+        cmd_vel_msg.angular.z = vel_az_rela
+        cmd_vel_pub.publish(cmd_vel_msg)
+
         debug_state = temp_state
         rate.sleep()
-
 
 if __name__ == '__main__':
     try:

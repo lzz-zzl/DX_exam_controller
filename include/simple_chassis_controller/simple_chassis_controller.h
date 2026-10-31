@@ -10,17 +10,20 @@
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <ros/ros.h>
+#include <control_toolbox/pid.h>
 
 
 namespace simple_chassis_controller {
 
     class Wheel_joint {
         public:
-        hardware_interface::JointHandle joint_name_;
-        double vel_target = 0;
-        double vel_actual = 0;
-        double tor_target = 0;
-        double tor_actual = 0;
+        hardware_interface::JointHandle joint_handle_;
+        double vel_target_ = 0;
+        double vel_actual_ = 0;
+        double tor_target_ = 0;
+        double tor_actual_ = 0;
+
+        control_toolbox::Pid Pid_;
     };
 
     class SimpleChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface> {
@@ -36,11 +39,10 @@ namespace simple_chassis_controller {
 
         void starting(const ros::Time &time) override;
 
-        void stopping(const ros::Time &time) override;
+        // void stopping(const ros::Time &time) override;
 
         hardware_interface::JointHandle front_left_joint_, front_right_joint_, back_left_joint_, back_right_joint_;
         double front_left_vel_target, front_right_vel_target, back_left_vel_target, back_right_vel_target;
-
 
     private:
         int state_{};
@@ -56,10 +58,10 @@ namespace simple_chassis_controller {
         double wheel_base = 0;
 
         void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
-        void jointStateCallback(const geometry_msgs::Twist::ConstPtr &msg);
+        // void jointStateCallback(const geometry_msgs::Twist::ConstPtr &msg);
         void debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg);
 
-        void computeWheelVelocities(const geometry_msgs::Twist &twist);
+        // void computeWheelVelocities(const geometry_msgs::Twist &twist);
 
         bool force_col = false;
         bool odom_pub_en = false;
