@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(simple_chassis_controller)
+project(hero_chassis_controller)
 
 ## Use C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -120,20 +120,19 @@ target_link_libraries(${PROJECT_NAME}
 
 roslint_cpp()
 
-add_library(simple_chassis_controller_plugins
-        src/simple_chassis_controller.cpp
-        src/Mecanum_odom.cpp
+add_library(hero_chassis_controller_plugins
+        src/hero_chassis_controller.cpp
 )
-target_link_libraries(simple_chassis_controller_plugins ${catkin_LIBRARIES})
-add_dependencies(simple_chassis_controller_plugins ${catkin_EXPORTED_TARGETS})
+target_link_libraries(hero_chassis_controller_plugins ${catkin_LIBRARIES})
+add_dependencies(hero_chassis_controller_plugins ${catkin_EXPORTED_TARGETS})
 
-install(TARGETS simple_chassis_controller_plugins
+install(TARGETS hero_chassis_controller_plugins
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
-install(FILES simple_chassis_controller_plugins_plugin.xml
+install(FILES hero_chassis_controller_plugins_plugin.xml
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 

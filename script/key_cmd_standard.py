@@ -83,9 +83,9 @@ def main():
     global yaw_target, pitch_target,state,debug_state
 
     rospy.init_node('keyboard_teleop')
-    pub = rospy.Publisher('/controller/simple_chassis_controller/debug', Float64MultiArray, queue_size=1)
-    cmd_vel_pub = rospy.Publisher('/controller/simple_chassis_controller/cmd_vel', Twist, queue_size=1)
-    rate = rospy.Rate(20)
+    pub = rospy.Publisher('/controller/hero_chassis_controller/debug', Float64MultiArray, queue_size=1)
+    cmd_vel_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd_vel', Twist, queue_size=1)
+    rate = rospy.Rate(40)
 
     listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()

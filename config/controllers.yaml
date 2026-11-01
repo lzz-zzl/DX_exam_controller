@@ -1,8 +1,8 @@
 
 
 controller:
-  simple_chassis_controller:
-    type: simple_chassis_controller/SimpleChassisController
+  hero_chassis_controller:
+    type: hero_chassis_controller/HeroChassisController
     wheel_radius: 0.07625
     wheel_track: 0.4
     wheel_base: 0.4

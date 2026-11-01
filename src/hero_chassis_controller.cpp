@@ -2,11 +2,11 @@
 // Created by qiayuan on 2/6/21.
 //
 
-#include "simple_chassis_controller/simple_chassis_controller.h"
+#include "hero_chassis_controller/hero_chassis_controller.h"
 #include <pluginlib/class_list_macros.hpp>
 #include <control_toolbox/pid.h>
 
-namespace simple_chassis_controller {
+namespace hero_chassis_controller {
     void Wheel_joint::setVel(double v) {
         state = 2;
         vel_target_ = v;
@@ -28,8 +28,8 @@ namespace simple_chassis_controller {
         }
     }
 
-    constexpr double linear_max_acceleration = 6.0;
-    constexpr double angular_max_acceleration = 18.0;
+    double linear_max_acceleration = 3.0;
+    double angular_max_acceleration = 8.0;
 
     void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt, double &cmd_vel_x,
                             double &cmd_vel_y, double &cmd_rad_z) {
@@ -54,6 +54,7 @@ namespace simple_chassis_controller {
         double dWz = wish_rad_z - cmd_rad_z;
         double dWz_max = angular_max_acceleration * dt;
         if (dWz > dWz_max) {
+
             cmd_rad_z += dWz_max;
         } else if (dWz < -dWz_max) {
             cmd_rad_z -= dWz_max;
@@ -71,7 +72,7 @@ namespace simple_chassis_controller {
     }
 
 
-    bool SimpleChassisController::init(hardware_interface::EffortJointInterface *effort_joint_interface,
+    bool HeroChassisController::init(hardware_interface::EffortJointInterface *effort_joint_interface,
                                        ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) {
         controller_nh.param("wheel_radius", wheel_radius_, 0.07625);
         controller_nh.param("wheel_track", wheel_track, 0.4);
@@ -79,11 +80,13 @@ namespace simple_chassis_controller {
         controller_nh.param("max_effort", max_effort_, 15.0);
         controller_nh.param("force_col", chassis_vel_col, false);
         controller_nh.param("cmd_vel_timeout", cmd_vel_timeout_, 0.5);
-        controller_nh.param("pid_kp", init_kp_, 1.0);
-        controller_nh.param("pid_ki", init_ki_, 0.01);
+        controller_nh.param("pid_kp", init_kp_, 0.5);
+        controller_nh.param("pid_ki", init_ki_, 0.0);
         controller_nh.param("pid_kd", init_kd_, 0.0);
         controller_nh.param("pid_i_limit", init_i_limit_, 20.0);
         controller_nh.param("odom_pub_en", odom_pub_en, false);
+        controller_nh.param("linear_max_acceleration", linear_max_acceleration, 3.0);
+        controller_nh.param("angular_max_acceleration", angular_max_acceleration, 8.0);
 
         front_left_joint_.joint_ = effort_joint_interface->getHandle("left_front_wheel_joint");
         front_right_joint_.joint_ = effort_joint_interface->getHandle("right_front_wheel_joint");
@@ -96,15 +99,15 @@ namespace simple_chassis_controller {
 
 
         cmd_vel_sub_ = controller_nh.subscribe<geometry_msgs::Twist>(
-            "cmd_vel", 1, &SimpleChassisController::cmdVelCallback, this);
+            "cmd_vel", 1, &HeroChassisController::cmdVelCallback, this);
         debug_sub_ = controller_nh.subscribe(
-            "debug", 1, &SimpleChassisController::debugCallback, this);
+            "debug", 1, &HeroChassisController::debugCallback, this);
 
         debug_pub_ = controller_nh.advertise<std_msgs::Float64MultiArray>("/chassis_controller/debug", 1);
 
-        ROS_INFO("[SimpleChassisController] init v1.1");
+        ROS_INFO("[HeroChassisController] init v1.2");
         if (odom_pub_en) {
-            ROS_INFO("[SimpleChassisController] odom_en");
+            ROS_INFO("[HeroChassisController] odom_en");
             controller_nh.param<std::string>("odom_head_frame_id", odom_tf_.header.frame_id, "odom");
             controller_nh.param<std::string>("odom_child_frame_id", odom_tf_.child_frame_id, "base_link");
 
@@ -116,11 +119,11 @@ namespace simple_chassis_controller {
         return true;
     }
 
-    void SimpleChassisController::starting(const ros::Time & /*time*/) {
+    void HeroChassisController::starting(const ros::Time & /*time*/) {
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>();
     }
 
-    void SimpleChassisController::update(const ros::Time &time, const ros::Duration &period) {
+    void HeroChassisController::update(const ros::Time &time, const ros::Duration &period) {
         double dt = period.toSec();
         double scale_yaw = (wheel_base + wheel_track) / 2;
         //tf
@@ -177,12 +180,12 @@ namespace simple_chassis_controller {
         //debug end
     }
 
-    void SimpleChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg) {
+    void HeroChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg) {
         cmd_vel_ = *msg;
         last_cmd_time_ = ros::Time::now();
     }
 
-    void SimpleChassisController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr &msg) {
+    void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr &msg) {
         double kp = msg->data[5];
         double ki = msg->data[6];
         double kd = msg->data[7];
@@ -197,7 +200,7 @@ namespace simple_chassis_controller {
         }
     }
 
-    void SimpleChassisController::publishTf(const ros::Time &time) {
+    void HeroChassisController::publishTf(const ros::Time &time) {
         odom_tf_.header.stamp = time;
         if (!tf_broadcaster_) return;
         odom_tf_.transform.translation.x = chassis_x_;
@@ -213,5 +216,5 @@ namespace simple_chassis_controller {
         tf_broadcaster_->sendTransform(odom_tf_);
     }
 
-    PLUGINLIB_EXPORT_CLASS(simple_chassis_controller::SimpleChassisController, controller_interface::ControllerBase)
+    PLUGINLIB_EXPORT_CLASS(hero_chassis_controller::HeroChassisController, controller_interface::ControllerBase)
 }
