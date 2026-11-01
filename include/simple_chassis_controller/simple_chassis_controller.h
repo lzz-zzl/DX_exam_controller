@@ -11,14 +11,9 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <ros/ros.h>
 #include <control_toolbox/pid.h>
-#include <sensor_msgs/JointState.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <vector>
-#include <hardware_interface/joint_command_interface.h>
-#include <std_srvs/Trigger.h>
-#include <sensor_msgs/Imu.h>
-#include <mutex>
+#include <memory.h>
 
 namespace simple_chassis_controller {
     class Wheel_joint {
@@ -97,11 +92,8 @@ namespace simple_chassis_controller {
 
 
         //tf
-        tf2_ros::TransformBroadcaster tf_broadcaster_;
+        std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
         geometry_msgs::TransformStamped odom_tf_;
-        double chinit_x_ = 0.0;
-        double chinit_y_ = 0.0;
-        double chinit_z_ = 0.0;
         double chassis_x_ = 0.0;
         double chassis_y_ = 0.0;
         double chassis_yaw_ = 0.0;

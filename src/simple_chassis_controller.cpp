@@ -28,8 +28,8 @@ namespace simple_chassis_controller {
         }
     }
 
-    constexpr double linear_max_acceleration = 3.0;
-    constexpr double angular_max_acceleration = 8.0;
+    constexpr double linear_max_acceleration = 6.0;
+    constexpr double angular_max_acceleration = 18.0;
 
     void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt, double &cmd_vel_x,
                             double &cmd_vel_y, double &cmd_rad_z) {
@@ -67,7 +67,7 @@ namespace simple_chassis_controller {
                            double &rz) {
         vx = (fl + fr + bl + br) * 0.25;
         vy = (bl - fl + fr - br) * 0.25;
-        rz = (fr + br - fl + bl) * 4 / scale_yaw;
+        rz = (fr + br - fl - bl) * 0.25 / scale_yaw;
     }
 
 
@@ -104,6 +104,7 @@ namespace simple_chassis_controller {
 
         ROS_INFO("[SimpleChassisController] init v1.1");
         if (odom_pub_en) {
+            ROS_INFO("[SimpleChassisController] odom_en");
             controller_nh.param<std::string>("odom_head_frame_id", odom_tf_.header.frame_id, "odom");
             controller_nh.param<std::string>("odom_child_frame_id", odom_tf_.child_frame_id, "base_link");
 
@@ -116,6 +117,7 @@ namespace simple_chassis_controller {
     }
 
     void SimpleChassisController::starting(const ros::Time & /*time*/) {
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>();
     }
 
     void SimpleChassisController::update(const ros::Time &time, const ros::Duration &period) {
@@ -129,7 +131,11 @@ namespace simple_chassis_controller {
                               back_right_joint_.joint_.getVelocity() * wheel_radius_,
                               scale_yaw, chassis_vx, chassis_vy, chassis_wz);
         }
-
+        double psi_mid = chassis_yaw_ + 0.5 * chassis_wz*dt; // 本周期中点朝向
+        double c = std::cos(psi_mid), s = std::sin(psi_mid);
+        chassis_x_ += (c * chassis_vx - s * chassis_vy) * dt;
+        chassis_y_ += (s * chassis_vx + c * chassis_vy) * dt;
+        chassis_yaw_ += chassis_wz * dt;
 
         publishTf(time);
         //tf end
@@ -164,8 +170,8 @@ namespace simple_chassis_controller {
         if (debug_count % 10 == 0) {
             debug_pub_msgs.data.resize(3);
             debug_pub_msgs.data[0] = front_left_joint_.joint_.getVelocity();
-            debug_pub_msgs.data[1] = front_left_joint_.getVel_target();
-            debug_pub_msgs.data[2] = front_left_joint_.joint_.getEffort();
+            debug_pub_msgs.data[1] = cmd_vel_x;
+            debug_pub_msgs.data[2] = chassis_vx;
             debug_pub_.publish(debug_pub_msgs);
         }
         //debug end
@@ -184,11 +190,16 @@ namespace simple_chassis_controller {
         front_right_joint_.pid_.setGains(kp, ki, kd, 20, -20);
         back_left_joint_.pid_.setGains(kp, ki, kd, 20, -20);
         back_right_joint_.pid_.setGains(kp, ki, kd, 20, -20);
+        if (abs(msg->data[0]- 1) < 1e-3) {
+            chassis_x_ = 0.0;
+            chassis_y_ = 0.0;
+            chassis_yaw_ = 0.0;
+        }
     }
 
     void SimpleChassisController::publishTf(const ros::Time &time) {
         odom_tf_.header.stamp = time;
-
+        if (!tf_broadcaster_) return;
         odom_tf_.transform.translation.x = chassis_x_;
         odom_tf_.transform.translation.y = chassis_y_;
         odom_tf_.transform.translation.z = 0.0;
@@ -199,7 +210,7 @@ namespace simple_chassis_controller {
         odom_tf_.transform.rotation.z = q.z();
         odom_tf_.transform.rotation.w = q.w();
 
-        tf_broadcaster_.sendTransform(odom_tf_);
+        tf_broadcaster_->sendTransform(odom_tf_);
     }
 
     PLUGINLIB_EXPORT_CLASS(simple_chassis_controller::SimpleChassisController, controller_interface::ControllerBase)

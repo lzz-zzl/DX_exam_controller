@@ -18,6 +18,12 @@ find_package(catkin REQUIRED
         hardware_interface
         forward_command_controller
         pluginlib
+        geometry_msgs
+        std_srvs
+        nav_msgs
+        sensor_msgs
+        tf2
+        tf2_ros
 )
 
 ###################################
