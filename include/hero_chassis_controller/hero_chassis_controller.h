@@ -2,8 +2,8 @@
 // Created by qiayuan on 2/6/21.
 //
 
-#ifndef SIMPLE_CHASSIS_CONTROLLER_SIMPLE_CHASSIS_CONTROLLER_H
-#define SIMPLE_CHASSIS_CONTROLLER_SIMPLE_CHASSIS_CONTROLLER_H
+#ifndef HERO_CHASSIS_CONTROLLER_SIMPLE_CHASSIS_CONTROLLER_H
+#define HERO_CHASSIS_CONTROLLER_SIMPLE_CHASSIS_CONTROLLER_H
 
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
@@ -15,7 +15,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <memory.h>
 
-namespace simple_chassis_controller {
+namespace hero_chassis_controller {
     class Wheel_joint {
     public:
         Wheel_joint() = default;
@@ -42,11 +42,11 @@ namespace simple_chassis_controller {
         double tor_target_ = 0;
     };
 
-    class SimpleChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface> {
+    class HeroChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface> {
     public:
-        SimpleChassisController() = default;
+        HeroChassisController() = default;
 
-        ~SimpleChassisController() override = default;
+        ~HeroChassisController() override = default;
 
         bool init(hardware_interface::EffortJointInterface *effort_joint_interface,
                   ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) override;
@@ -99,6 +99,6 @@ namespace simple_chassis_controller {
         double chassis_yaw_ = 0.0;
         void publishTf(const ros::Time &time);
     };
-} // namespace simple_chassis_controller
+} // namespace hero_chassis_controller
 
-#endif //SIMPLE_CHASSIS_CONTROLLER_SIMPLE_CHASSIS_CONTROLLER_H
+#endif //HERO_CHASSIS_CONTROLLER_SIMPLE_CHASSIS_CONTROLLER_H
