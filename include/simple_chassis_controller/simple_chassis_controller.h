@@ -12,14 +12,20 @@
 #include <ros/ros.h>
 #include <control_toolbox/pid.h>
 #include <sensor_msgs/JointState.h>
-
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <vector>
+#include <hardware_interface/joint_command_interface.h>
+#include <std_srvs/Trigger.h>
+#include <sensor_msgs/Imu.h>
+#include <mutex>
 
 namespace simple_chassis_controller {
     class Wheel_joint {
     public:
         Wheel_joint() = default;
 
-        hardware_interface::JointHandle joint_handle_;
+        hardware_interface::JointHandle joint_;
         control_toolbox::Pid pid_;
         int state = 0;
         /*
@@ -65,31 +71,41 @@ namespace simple_chassis_controller {
         ros::Time last_change_;
 
         ros::Subscriber cmd_vel_sub_;
+        ros::Time last_cmd_time_;
+        void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
         ros::Subscriber debug_sub_;
+        void debugCallback(const std_msgs::Float64MultiArray::ConstPtr &msg);
 
         ros::Publisher debug_pub_;
         std_msgs::Float64MultiArray debug_pub_msgs;
 
-        ros::Time last_cmd_time_;
-        double cmd_vel_x = 0, cmd_vel_y = 0, cmd_rad_z = 0;
-        geometry_msgs::Twist cmd_vel_;
+        double cmd_vel_x = 0, cmd_vel_y = 0, cmd_rad_z = 0;//限制处理速度
+        geometry_msgs::Twist cmd_vel_;               //初始命令速度
 
+        //地盘
         double wheel_base = 0.4;
         double wheel_track = 0.4;
+        double chassis_vx = 0, chassis_vy = 0, chassis_wz = 0;
 
-        void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
-
-        void debugCallback(const std_msgs::Float64MultiArray::ConstPtr &msg);
-
-        // void computeWheelVelocities(const geometry_msgs::Twist &twist);
-
-        bool force_col = false;
+        bool chassis_vel_col = false;
         bool odom_pub_en = false;
 
         double max_effort_ = 100;
         double wheel_radius_ = 0.07625;
         double cmd_vel_timeout_ = 0.5; // cmd_vel 超时（秒）
         double max_wheel_velocity_ = 100.0; // 轮子最大角速度 (rad/s)
+
+
+        //tf
+        tf2_ros::TransformBroadcaster tf_broadcaster_;
+        geometry_msgs::TransformStamped odom_tf_;
+        double chinit_x_ = 0.0;
+        double chinit_y_ = 0.0;
+        double chinit_z_ = 0.0;
+        double chassis_x_ = 0.0;
+        double chassis_y_ = 0.0;
+        double chassis_yaw_ = 0.0;
+        void publishTf(const ros::Time &time);
     };
 } // namespace simple_chassis_controller
 
