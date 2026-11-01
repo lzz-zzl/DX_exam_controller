@@ -6,8 +6,8 @@ from geometry_msgs.msg import Twist
 from pynput import keyboard
 
 # ============ 速度/目标参数 ============
-vx = 300      # 前进/后退速度
-vy = 300      # 左移/右移速度
+vx = 4      # 前进/后退速度
+vy = 4      # 左移/右移速度
 wz = 10.0      # 角速度（rad/s），对应 vel_az_rela
 
 # 云台目标每帧增量（20Hz 下，每秒 = 20 × 这个值）
@@ -83,7 +83,7 @@ def main():
     global yaw_target, pitch_target,state,debug_state
 
     rospy.init_node('keyboard_teleop')
-    pub = rospy.Publisher('/standard_cmd', Float64MultiArray, queue_size=1)
+    pub = rospy.Publisher('/controller/simple_chassis_controller/debug', Float64MultiArray, queue_size=1)
     cmd_vel_pub = rospy.Publisher('/controller/simple_chassis_controller/cmd_vel', Twist, queue_size=1)
     rate = rospy.Rate(20)
 

@@ -1,7 +1,9 @@
+
+
 controller:
   simple_chassis_controller:
     type: simple_chassis_controller/SimpleChassisController
-#    wheel_base: 0.4
+    wheel_base: 0.4
 
   joint_state_controller:
     type: joint_state_controller/JointStateController
