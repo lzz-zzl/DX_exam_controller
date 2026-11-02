@@ -12,6 +12,14 @@
         controller/hero_chassis_controller
         controller/joint_state_controller
   "/>
+  <node name="robot_state_publisher"
+        pkg="robot_state_publisher"
+        type="robot_state_publisher"
+        output="screen">
+    <param name="publish_frequency" value="50.0"/>
+    <param name="ignore_timestamp" value="false"/>
+  </node>
+
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find hero_chassis_controller)/rviz/odom_tf.rviz"/>
 
 </launch>

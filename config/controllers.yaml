@@ -7,6 +7,9 @@ controller:
     wheel_track: 0.4
     wheel_base: 0.4
     odom_pub_en: true
+#    global_vel_cmd: true
+    linear_max_acceleration: 2.0
+    angular_max_acceleration: 4.0
 
   joint_state_controller:
     type: joint_state_controller/JointStateController
