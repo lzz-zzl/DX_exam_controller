@@ -5,6 +5,11 @@
 #include "hero_chassis_controller/hero_chassis_controller.h"
 #include <pluginlib/class_list_macros.hpp>
 #include <control_toolbox/pid.h>
+#include <Eigen/Dense>
+#include <cmath>
+#include <sensor_msgs/JointState.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 namespace hero_chassis_controller
 {
@@ -238,6 +243,7 @@ void HeroChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr&
   cmd_vel_ = *msg;
   last_cmd_time_ = ros::Time::now();
 }
+
 
 void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {

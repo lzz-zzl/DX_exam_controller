@@ -1,0 +1,19 @@
+<library path="lib/libhero_chassis_controller_plugins">
+    <class name="hero_chassis_controller/HeroChassisController"
+           type="hero_chassis_controller::HeroChassisController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            The HeroChassisController is   robot chassis controller.
+        </description>
+    </class>
+</library>
+
+<library path="lib/libhero_gimbal_controller_plugins">
+<class name="hero_gimbal_controller/HeroGimbalController"
+       type="hero_gimbal_controller::HeroGimbalController"
+       base_class_type="controller_interface::ControllerBase">
+    <description>
+        The HeroGimbalController is   robot gimbal controller.
+    </description>
+</class>
+</library>

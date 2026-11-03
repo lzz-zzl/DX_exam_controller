@@ -13,7 +13,6 @@
 #include <control_toolbox/pid.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <memory.h>
 
 namespace hero_chassis_controller {
   class Wheel_joint {
@@ -51,8 +50,9 @@ namespace hero_chassis_controller {
 
     ~HeroChassisController() override = default;
 
-    void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt, double &cmd_vel_x,
-                            double &cmd_vel_y, double &cmd_rad_z);
+    static void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt,
+                                   double &cmd_vel_x,
+                                   double &cmd_vel_y, double &cmd_rad_z);
 
     bool init(hardware_interface::EffortJointInterface *effort_joint_interface,
               ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) override;
@@ -70,7 +70,6 @@ namespace hero_chassis_controller {
   private:
     int state_{};
     ros::Time last_change_;
-
     ros::Subscriber cmd_vel_sub_;
     ros::Time last_cmd_time_;
 

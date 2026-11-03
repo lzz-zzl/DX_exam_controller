@@ -24,6 +24,7 @@ find_package(catkin REQUIRED
         sensor_msgs
         tf2
         tf2_ros
+        rm_msgs_exam
 )
 
 ###################################
@@ -49,6 +50,7 @@ catkin_package(
         pluginlib
         DEPENDS
         control_toolbox
+        rm_msgs_exam
 )
 
 ###########
@@ -132,22 +134,28 @@ install(TARGETS hero_chassis_controller_plugins
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
-install(FILES hero_chassis_controller_plugins_plugin.xml
+install(FILES hero_controller_plugin.xml
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-# 发送
-add_executable(chassis_cmd_handle src/chassis_cmd_handle.cpp
+add_library(hero_gimbal_controller_plugins
+        src/hero_gimbal_controller.cpp
 )
-target_include_directories(chassis_cmd_handle PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${catkin_INCLUDE_DIRS}
-)
-add_dependencies(chassis_cmd_handle ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(hero_gimbal_controller_plugins ${catkin_LIBRARIES})
+add_dependencies(hero_gimbal_controller_plugins ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(chassis_cmd_handle
-        ${catkin_LIBRARIES}
+install(TARGETS hero_gimbal_controller_plugins
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
+
+install(FILES hero_controller_plugins_plugin.xml
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+
+# 发送
 
 
 #线性代收库
