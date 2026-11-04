@@ -39,8 +39,9 @@ void Gimbal_joint::setTorBias(double tor)
 }
 
 
-void Gimbal_joint::update(ros::Duration dt)
+void Gimbal_joint::update(ros::Duration period)
 {
+  double dt = period.toSec();
   if (state == 0)
   {
     joint_.setCommand(0);
@@ -67,7 +68,7 @@ void Gimbal_joint::update(ros::Duration dt)
   //debug
 }
 
-control_toolbox::Pid* debug_pid = nullptr;
+PID* debug_pid = nullptr;
 
 bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
                                 ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh)

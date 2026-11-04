@@ -19,10 +19,10 @@ yaw_step_per_frame = 0.1
 pitch_step_per_frame = 0.1
 
 # ============ PID 增益 ============
-debug_kp = 1
+debug_kp = 4
 debug_Ki = 0.0
-debug_Kd = 10.0
-gain_step = 1
+debug_Kd = 0.0
+gain_step = 0.01
 
 # ============ 模块级状态 ============
 yaw_target = 0.0

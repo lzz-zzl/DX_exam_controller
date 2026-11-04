@@ -14,6 +14,7 @@
 #include <rm_msgs_exam/GimbalCmd.h>
 #include <sensor_msgs/Imu.h>
 #include <memory.h>
+#include <PID.h>
 
 namespace hero_gimbal_controller {
 #define PI 3.14159265358979323846
@@ -23,8 +24,8 @@ namespace hero_gimbal_controller {
     Gimbal_joint() = default;
 
     hardware_interface::JointHandle joint_;
-    control_toolbox::Pid vel_pid_;
-    control_toolbox::Pid pos_pid_;
+    PID vel_pid_;
+    PID pos_pid_;
     int state = 0;
     /*
      *0 = 为停止
