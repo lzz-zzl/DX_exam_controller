@@ -19,7 +19,7 @@
         <param name="publish_frequency" value="50.0"/>
         <param name="ignore_timestamp" value="false"/>
     </node>
-    <!--结算imu的节点-->
+<!--结算imu的节点-->
     <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_gimbal" output="screen">
         <remap from="imu/data_raw" to="/gimbal_imu/imu"/>
         <remap from="imu/data" to="/gimbal_imu/data_filtered"/>

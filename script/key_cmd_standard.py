@@ -15,13 +15,13 @@ vx = 4
 vy = 4
 wz = 10.0
 
-yaw_step_per_frame = 0.3
+yaw_step_per_frame = 0.1
 pitch_step_per_frame = 0.1
 
 # ============ PID 增益 ============
-debug_kp = 4
+debug_kp = 1
 debug_Ki = 0.0
-debug_Kd = 0.0
+debug_Kd = 10.0
 gain_step = 1
 
 # ============ 模块级状态 ============
@@ -29,7 +29,7 @@ yaw_target = 0.0
 pitch_target = 0.0
 gimbal_state = 1.0
 chassis_state = 0.0
-debug_id = 0.0
+debug_id = 1.0
 
 current_keys = set()
 
@@ -142,7 +142,7 @@ def main():
     global yaw_target, pitch_target, chassis_state, debug_id, gimbal_state, cmd_state
 
     rospy.init_node('keyboard_teleop')
-    pub = rospy.Publisher('/controller/hero_gimabl_controller/sub_debug',
+    pub = rospy.Publisher('/hero_gimbal_controller/sub_debug',
                           Float64MultiArray, queue_size=1)
     cmd_vel_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd_vel',
                                   Twist, queue_size=1)

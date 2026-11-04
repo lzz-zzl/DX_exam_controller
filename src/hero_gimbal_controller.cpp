@@ -11,6 +11,10 @@
 
 namespace hero_gimbal_controller
 {
+//test
+double test[5];
+//test end
+
 void Gimbal_joint::setTor(double tor)
 {
   state = 1;
@@ -53,15 +57,11 @@ void Gimbal_joint::update(ros::Duration dt)
   else if (state == 3)
   {
     double err = pos_target_ - world_pos;
-    if (err > PI)
-    {
-      err += 2 * PI;
-    }
-    else if (err < -PI)
-    {
-      err -= 2 * PI;
-    }
-    joint_.setCommand(pos_pid_.computeCommand(err, dt) + tor_bias_);
+    err = std::remainder(err, 2 * PI);
+    test[0] = err;
+    test[1] = pos_pid_.computeCommand(err, dt) + tor_bias_;
+    joint_.setCommand(test[1]);
+    // joint_.setCommand(pos_pid_.computeCommand(err, dt) + tor_bias_);
   }
 
   //debug
@@ -94,7 +94,7 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
   yaw_joint.pos_pid_.setGains(6.0, 0, 0.5, -1.2, 1.2);
   yaw_joint.pos_pid_.setGains(6.0, 0, 0.5, -3, 3);
 
-  ROS_INFO("[Hero_gimbal_controller] init v1.0 ");
+  ROS_INFO("[Hero_gimbal_controller] init v1.1 ");
   return true;
 }
 
@@ -115,20 +115,24 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
     pitch_joint.setPos(gimbal_cmd_msg_.pos_pitch);
   }
   yaw_joint.update(period);
-  pitch_joint.update(period);
+  // pitch_joint.update(period);
 
   //debug
   static int debug_count = 0;
   debug_count++;
   if (debug_count % 10 == 0)
   {
-    debug_pub_msgs.data.resize(3);
+    debug_pub_msgs.data.resize(8);
     debug_pub_msgs.data[0] = yaw_joint.world_pos;
-    debug_pub_msgs.data[1] = pitch_joint.world_pos;
-    debug_pub_msgs.data[2] = pitch_joint.world_pos;
+    debug_pub_msgs.data[1] = gimbal_cmd_msg_.pos_yaw;
+    yaw_joint.pos_pid_.getGains(debug_pub_msgs.data[2], debug_pub_msgs.data[5], debug_pub_msgs.data[3],
+                                debug_pub_msgs.data[5],
+                                debug_pub_msgs.data[5]);
+    debug_pub_msgs.data[4] = test[0];
+    debug_pub_msgs.data[6] = test[1];
     debug_pub_.publish(debug_pub_msgs);
   }
-  //debug end
+  //debug endf
 }
 
 void HeroGimbalController::gimbalCmdCallback(const rm_msgs_exam::GimbalCmd::ConstPtr& msg)
@@ -149,7 +153,7 @@ void HeroGimbalController::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   double roll, pitch, yaw;
   m.getRPY(roll, pitch, yaw);
   yaw_joint.world_pos = yaw;
-  pitch_joint.world_pos = -roll;
+  // pitch_joint.world_pos = -roll;
 }
 
 void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
@@ -165,9 +169,15 @@ void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::Cons
     switch (debug_id)
     {
       case 1:
-        debug_pid = &yaw_joint.vel_pid_;
+        debug_pid = &yaw_joint.pos_pid_;
         break;
       case 2:
+        debug_pid = &pitch_joint.pos_pid_;
+        break;
+      case 3:
+        debug_pid = &yaw_joint.vel_pid_;
+        break;
+      case 4:
         debug_pid = &pitch_joint.vel_pid_;
         break;
       default:
