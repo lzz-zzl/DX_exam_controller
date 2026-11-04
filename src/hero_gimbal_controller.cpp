@@ -92,7 +92,7 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
     ROS_ERROR("[HeroGimbalController] getHandle failed: %s", e.what());
     return false;
   }
-  yaw_joint.pos_pid_.setGains(6.0, 0, 0.5, -1.2, 1.2);
+  yaw_joint.pos_pid_.setGains(7.0, 0, 1.4, -1.2, 1.2);
   yaw_joint.pos_pid_.setGains(6.0, 0, 0.5, -3, 3);
 
   ROS_INFO("[Hero_gimbal_controller] init v1.1 ");
