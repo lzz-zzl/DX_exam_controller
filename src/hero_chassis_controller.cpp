@@ -58,10 +58,7 @@ void HeroChassisController::acceleration_limit(double wish_vel_x, double wish_ve
   {
     return;
   }
-  // double temp_sin = sin(chassis_wz * dt);
-  // double temp_cos = cos(chassis_wz * dt);
-  // double dVx = wish_vel_x * temp_cos + wish_vel_y * temp_sin - cmd_vel_x_;
-  // double dVy = wish_vel_x * -temp_sin + wish_vel_y * temp_cos - cmd_vel_y_;
+
   double dVx = wish_vel_x - cmd_vel_x_;
   double dVy = wish_vel_y - cmd_vel_y_;
   double dVLinear_sq = dVx * dVx + dVy * dVy;

@@ -9,17 +9,18 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <ros/ros.h>
-#include <control_toolbox/pid.h>
 #include <tf2_ros/transform_listener.h>
 #include <rm_msgs_exam/GimbalCmd.h>
 #include <sensor_msgs/Imu.h>
 #include <memory.h>
 #include <PID.h>
 
-namespace hero_gimbal_controller {
+namespace hero_gimbal_controller
+{
 #define PI 3.14159265358979323846
 
-  class Gimbal_joint {
+  class Gimbal_joint
+  {
   public:
     Gimbal_joint() = default;
 
@@ -60,27 +61,28 @@ namespace hero_gimbal_controller {
   };
 
 
-  class HeroGimbalController : public controller_interface::Controller<hardware_interface::EffortJointInterface> {
+  class HeroGimbalController : public controller_interface::Controller<hardware_interface::EffortJointInterface>
+  {
   public:
     HeroGimbalController() = default;
 
     ~HeroGimbalController() override = default;
 
-    bool init(hardware_interface::EffortJointInterface *effort_joint_interface,
-              ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) override;
+    bool init(hardware_interface::EffortJointInterface* effort_joint_interface,
+              ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) override;
 
-    void update(const ros::Time &time, const ros::Duration &period) override;
+    void update(const ros::Time& time, const ros::Duration& period) override;
 
-    void starting(const ros::Time &time) override;
+    void starting(const ros::Time& time) override;
 
     // void stopping(const ros::Time &time) override;
 
 
   private:
     int state_{};
-    ros::Time last_change_;
 
     ros::Time last_cmd_time_;
+    double gimbal_cmd_timeout_ = 0.5;
 
     ros::Subscriber gimbal_cmd_sub_;
     rm_msgs_exam::GimbalCmd gimbal_cmd_msg_;
@@ -94,11 +96,11 @@ namespace hero_gimbal_controller {
     Gimbal_joint yaw_joint, pitch_joint;
     // double
 
-    void gimbalCmdCallback(const rm_msgs_exam::GimbalCmd::ConstPtr &msg);
+    void gimbalCmdCallback(const rm_msgs_exam::GimbalCmd::ConstPtr& msg);
 
-    void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
+    void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
-    void debugCallback(const std_msgs::Float64MultiArray::ConstPtr &msg);
+    void debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg);
   };
 } // namespace hero_gimbal_controller
 

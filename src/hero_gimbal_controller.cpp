@@ -71,15 +71,24 @@ PID* debug_pid = nullptr;
 bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
                                 ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh)
 {
+  controller_nh.param("gimbal_cmd_timeout", gimbal_cmd_timeout_, 0.5);
+  double init_yaw_kp_{}, init_yaw_ki_{}, init_yaw_kd_{}, int_yaw_i_limit_{},
+         init_pitch_kp_{}, init_pitch_ki_{}, init_pitch_kd_{}, int_pitch_i_limit_{};
+  controller_nh.param("pid_yaw_kp", init_yaw_kp_, 7.0);
+  controller_nh.param("pid_yaw_ki", init_yaw_ki_, 0.0);
+  controller_nh.param("pid_yaw_kd", init_yaw_kd_, 1.4);
+  controller_nh.param("int_yaw_i_limit", int_yaw_i_limit_, 2.0);
+  controller_nh.param("pid_pitch_kp", init_pitch_kp_, 8.0);
+  controller_nh.param("pid_pitch_ki", init_pitch_ki_, 0.2);
+  controller_nh.param("pid_pitch_kd", init_pitch_kd_, 1.0);
+  controller_nh.param("int_pitch_i_limit", int_pitch_i_limit_, 2.0);
   debug_pub_ = controller_nh.advertise<std_msgs::Float64MultiArray>("/hero_gimbal_controller/pub_debug", 1);
-
   gimbal_cmd_sub_ = controller_nh.subscribe("/controller/gimbal_controller/cmd", 1,
                                             &HeroGimbalController::gimbalCmdCallback,
                                             this);
   imu_sub_ = controller_nh.subscribe("/gimbal_imu/data_filtered", 1, &HeroGimbalController::imuCallback, this);
   debug_sub_ = controller_nh.subscribe("/hero_gimbal_controller/sub_debug", 1, &HeroGimbalController::debugCallback,
                                        this);
-
   try
   {
     pitch_joint.joint_ = effort_joint_interface->getHandle("pitch_joint");
@@ -90,8 +99,9 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
     ROS_ERROR("[HeroGimbalController] getHandle failed: %s", e.what());
     return false;
   }
-  yaw_joint.pos_pid_.setGains(7.0, 0, 1.4, -1.2, 1.2);
-  pitch_joint.pos_pid_.setGains(8.0, 0.2, 1.0, -2, -1);
+  yaw_joint.pos_pid_.setGains(init_yaw_kp_, init_yaw_ki_, init_yaw_kd_, int_yaw_i_limit_, -int_yaw_i_limit_);
+  pitch_joint.pos_pid_.setGains(init_pitch_kp_, init_pitch_ki_, init_pitch_kd_, int_pitch_i_limit_,
+                                -int_pitch_i_limit_);
 
   ROS_INFO("[Hero_gimbal_controller] init v1.1 ");
   return true;
@@ -104,6 +114,10 @@ void HeroGimbalController::starting(const ros::Time& /*time*/)
 void HeroGimbalController::update(const ros::Time& time, const ros::Duration& period)
 {
   // double dt = period.toSec();
+  if ((ros::Time::now() - last_cmd_time_).toSec() > gimbal_cmd_timeout_)
+  {
+    gimbal_cmd_msg_ = rm_msgs_exam::GimbalCmd();
+  }
   if (gimbal_cmd_msg_.mode == 0)
   {
     // yaw_joint.getTor_target();
