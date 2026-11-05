@@ -64,8 +64,6 @@ void Gimbal_joint::update(ros::Duration period)
     joint_.setCommand(test[1]);
     // joint_.setCommand(pos_pid_.computeCommand(err, dt) + tor_bias_);
   }
-
-  //debug
 }
 
 PID* debug_pid = nullptr;
@@ -93,7 +91,7 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
     return false;
   }
   yaw_joint.pos_pid_.setGains(7.0, 0, 1.4, -1.2, 1.2);
-  yaw_joint.pos_pid_.setGains(6.0, 0, 0.5, -3, 3);
+  pitch_joint.pos_pid_.setGains(8.0, 0.2, 1.0, -2, -1);
 
   ROS_INFO("[Hero_gimbal_controller] init v1.1 ");
   return true;
@@ -116,7 +114,7 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
     pitch_joint.setPos(gimbal_cmd_msg_.pos_pitch);
   }
   yaw_joint.update(period);
-  // pitch_joint.update(period);
+  pitch_joint.update(period);
 
   //debug
   static int debug_count = 0;
@@ -124,13 +122,15 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
   if (debug_count % 10 == 0)
   {
     debug_pub_msgs.data.resize(8);
-    debug_pub_msgs.data[0] = yaw_joint.world_pos;
-    debug_pub_msgs.data[1] = gimbal_cmd_msg_.pos_yaw;
+    debug_pub_msgs.data[0] = pitch_joint.world_pos;
+    debug_pub_msgs.data[1] = gimbal_cmd_msg_.pos_pitch;
     yaw_joint.pos_pid_.getGains(debug_pub_msgs.data[2], debug_pub_msgs.data[5], debug_pub_msgs.data[3],
                                 debug_pub_msgs.data[5],
                                 debug_pub_msgs.data[5]);
     debug_pub_msgs.data[4] = test[0];
     debug_pub_msgs.data[6] = test[1];
+    debug_pub_msgs.data[7] = pitch_joint.joint_.getPosition();
+
     debug_pub_.publish(debug_pub_msgs);
   }
   //debug endf
@@ -154,7 +154,7 @@ void HeroGimbalController::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   double roll, pitch, yaw;
   m.getRPY(roll, pitch, yaw);
   yaw_joint.world_pos = yaw;
-  // pitch_joint.world_pos = -roll;
+  pitch_joint.world_pos = -std::remainder(PI - roll, 2 * PI);
 }
 
 void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
@@ -169,6 +169,9 @@ void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::Cons
     int debug_id = static_cast<int>(msg->data[1]);
     switch (debug_id)
     {
+      case 0:
+        debug_pid = nullptr;
+        break;
       case 1:
         debug_pid = &yaw_joint.pos_pid_;
         break;

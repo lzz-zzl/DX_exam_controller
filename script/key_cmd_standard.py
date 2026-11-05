@@ -15,13 +15,13 @@ vx = 4
 vy = 4
 wz = 10.0
 
-yaw_step_per_frame = 0.3
-pitch_step_per_frame = 0.1
+yaw_step_per_frame = 0.2
+pitch_step_per_frame = 0.05
 
 # ============ PID 增益 ============
-debug_kp = 4
+debug_kp = 0
 debug_Ki = 0.0
-debug_Kd = 0.0
+debug_Kd = 1.2
 gain_step = 0.1
 
 # ============ 模块级状态 ============
@@ -29,7 +29,7 @@ yaw_target = 0.0
 pitch_target = 0.0
 gimbal_state = 1.0
 chassis_state = 0.0
-debug_id = 1.0
+debug_id = 0
 
 current_keys = set()
 
@@ -191,7 +191,7 @@ def main():
         elif yaw_target < -PI:
             yaw_target += 2 * PI
         # pitch 限幅
-        pitch_target = max(-0.5, min(0.5, pitch_target))
+        pitch_target = max(-1.4, min(0.4, pitch_target))
 
         # ---- debug 消息 ----
         msg.data = [
