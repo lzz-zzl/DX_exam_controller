@@ -13,9 +13,9 @@ cmd_state = 0  # 0: PID调试  1: debug_id选择  2: 底盘状态  3: 云台状�
 # ============ 速度/目标参数 ============
 vx = 4
 vy = 4
-wz = 10.0
+wz = 3.0
 
-yaw_step_per_frame = 0.2
+yaw_step_per_frame = 0.1
 pitch_step_per_frame = 0.05
 
 # ============ PID 增益 ============
@@ -28,7 +28,7 @@ gain_step = 0.1
 yaw_target = 0.0
 pitch_target = 0.0
 gimbal_state = 1.0
-chassis_state = 0.0
+chassis_state = 2.0
 debug_id = 0
 
 current_keys = set()
@@ -142,7 +142,7 @@ def main():
     global yaw_target, pitch_target, chassis_state, debug_id, gimbal_state, cmd_state
 
     rospy.init_node('keyboard_teleop')
-    pub = rospy.Publisher('/hero_gimbal_controller/sub_debug',
+    pub = rospy.Publisher('/controller/hero_chassis_controller/debug',
                           Float64MultiArray, queue_size=1)
     cmd_vel_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd_vel',
                                   Twist, queue_size=1)
@@ -173,10 +173,10 @@ def main():
         if 'd' in current_keys: vel_y_rela = -vy
         if 'q' in current_keys:
             vel_az_rela = wz;
-            chassis_state = 1
+            chassis_state = 2
         if 'e' in current_keys:
             vel_az_rela = -wz;
-            chassis_state = 1
+            chassis_state = 2
 
         # ---- 云台目标：按住持续增加 ----
         if 'f' in current_keys: yaw_target += yaw_step_per_frame
