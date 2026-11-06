@@ -65,9 +65,9 @@ public:
 
   ~HeroChassisController() override = default;
 
-  static void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt,
-                                 double& cmd_vel_x,
-                                 double& cmd_vel_y, double& cmd_rad_z);
+  // static void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt,
+  //                                double& cmd_vel_x,
+  //                                double& cmd_vel_y, double& cmd_rad_z);
 
   bool init(hardware_interface::EffortJointInterface* effort_joint_interface,
             ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) override;
@@ -100,14 +100,15 @@ private:
 
   std_msgs::Float64MultiArray debug_pub_msgs;
 
-  double cmd_vel_x = 0, cmd_vel_y = 0, cmd_rad_z = 0; //限制处理速度
-  geometry_msgs::Twist cmd_vel_;                      //初始命令速度
+  // double cmd_vel_x = 0, cmd_vel_y = 0, cmd_rad_z = 0; //限制处理速度
+  geometry_msgs::Twist cmd_vel_;         //初始命令速度
+  geometry_msgs::Twist chassis_cmd_vel_; // 确保在地面坐标系下加速度限制
 
   //地盘
   double wheel_base = 0.4;
   double wheel_track = 0.4;
   double scale_yaw = (wheel_base + wheel_track) / 2;
-  double chassis_vx = 0, chassis_vy = 0, chassis_wz = 0;
+  double chassis_vx_ = 0, chassis_vy_ = 0, chassis_wz_ = 0;
 
   bool global_vel_cmd_en = false;
   bool odom_pub_en = false;
@@ -123,7 +124,9 @@ private:
   void state_follow();
   void state_twist();
 
-
+  void rotateCmdVel(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double yaw);
+  void chassis_acc_limit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double chassis_wz,
+                         ros::Duration period);
   //tfS
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   geometry_msgs::TransformStamped odom_tf_;

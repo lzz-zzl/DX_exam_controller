@@ -13,7 +13,7 @@ cmd_state = 0  # 0: PID调试  1: debug_id选择  2: 底盘状态  3: 云台状�
 # ============ 速度/目标参数 ============
 vx = 4
 vy = 4
-wz = 3.0
+wz = 10.0
 
 yaw_step_per_frame = 0.1
 pitch_step_per_frame = 0.05
@@ -173,10 +173,10 @@ def main():
         if 'd' in current_keys: vel_y_rela = -vy
         if 'q' in current_keys:
             vel_az_rela = wz;
-            chassis_state = 2
+            # chassis_state = 2
         if 'e' in current_keys:
             vel_az_rela = -wz;
-            chassis_state = 2
+            # chassis_state = 2
 
         # ---- 云台目标：按住持续增加 ----
         if 'f' in current_keys: yaw_target += yaw_step_per_frame

@@ -1,13 +1,12 @@
 controller:
   hero_chassis_controller:
     type: hero_chassis_controller/HeroChassisController
+    odom_pub_en: true
     wheel_radius: 0.07625
     wheel_track: 0.4
     wheel_base: 0.4
-    odom_pub_en: true
-    #    global_vel_cmd: true
-    linear_max_acceleration: 2.0
-    angular_max_acceleration: 4.0
+    linear_max_acceleration: 3.0
+    angular_max_acceleration: 8.0
 
   hero_gimbal_controller:
     type: hero_gimbal_controller/HeroGimbalController

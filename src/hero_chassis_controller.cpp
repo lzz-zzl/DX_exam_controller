@@ -50,49 +50,6 @@ void Wheel_joint::update(ros::Duration dt)
 double linear_max_acceleration = 3.0;
 double angular_max_acceleration = 8.0;
 
-void HeroChassisController::acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt,
-                                               double& cmd_vel_x_,
-                                               double& cmd_vel_y_, double& cmd_rad_z_)
-{
-  if (dt <= 1e-5)
-  {
-    return;
-  }
-
-  double dVx = wish_vel_x - cmd_vel_x_;
-  double dVy = wish_vel_y - cmd_vel_y_;
-  double dVLinear_sq = dVx * dVx + dVy * dVy;
-  double accLinear_sq = linear_max_acceleration * linear_max_acceleration * dt * dt;
-  if (dVLinear_sq > accLinear_sq)
-  {
-    double scale = std::sqrt(accLinear_sq / dVLinear_sq);
-    dVx *= scale;
-    dVy *= scale;
-    cmd_vel_x_ += dVx;
-    cmd_vel_y_ += dVy;
-  }
-  else
-  {
-    cmd_vel_x_ = wish_vel_x;
-    cmd_vel_y_ = wish_vel_y;
-  }
-
-  double dWz = wish_rad_z - cmd_rad_z_;
-  double dWz_max = angular_max_acceleration * dt;
-  if (dWz > dWz_max)
-  {
-    cmd_rad_z_ += dWz_max;
-  }
-  else if (dWz < -dWz_max)
-  {
-    cmd_rad_z_ -= dWz_max;
-  }
-  else
-  {
-    cmd_rad_z_ = wish_rad_z;
-  }
-}
-
 //scale_yaw: (wheel_track+wheel_base)/2
 void forwardKinematics(double fl, double fr, double bl, double br, double scale_yaw, double& vx, double& vy,
                        double& rz)
@@ -101,7 +58,6 @@ void forwardKinematics(double fl, double fr, double bl, double br, double scale_
   vy = (bl - fl + fr - br) * 0.25;
   rz = (fr + br - fl - bl) * 0.25 / scale_yaw;
 }
-
 
 bool HeroChassisController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
                                  ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh)
@@ -112,9 +68,6 @@ bool HeroChassisController::init(hardware_interface::EffortJointInterface* effor
   controller_nh.param("max_effort", max_effort_, 15.0);
   controller_nh.param("global_vel_cmd", global_vel_cmd_en, false);
   controller_nh.param("cmd_vel_timeout", cmd_vel_timeout_, 0.5);
-  controller_nh.param("pid_kp", init_kp_, 0.5);
-  controller_nh.param("pid_ki", init_ki_, 0.0);
-  controller_nh.param("pid_kd", init_kd_, 0.0);
   controller_nh.param("pid_i_limit", init_i_limit_, 20.0);
   controller_nh.param("odom_pub_en", odom_pub_en, false);
   controller_nh.param("linear_max_acceleration", linear_max_acceleration, 3.0);
@@ -164,8 +117,8 @@ void HeroChassisController::starting(const ros::Time& /*time*/)
 
 void HeroChassisController::update(const ros::Time& time, const ros::Duration& period)
 {
-  double dt = period.toSec();
-  //tf
+  // double dt = period.toSec();
+  //tf///////
   if (odom_pub_en)
   {
     updateOdom(time, period);
@@ -198,17 +151,17 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
       ROS_ERROR("[hero_chassis_controller] state mismatch!");
       break;
   }
+  chassis_acc_limit(cmd_vel_, chassis_cmd_vel_, chassis_yaw_, period);
 
-  acceleration_limit(cmd_vel_.linear.x, cmd_vel_.linear.y, cmd_vel_.angular.z, dt,
-                     cmd_vel_x, cmd_vel_y, cmd_rad_z);
-  // cmd_vel_x = cmd_vel_.linear.x;
-  // cmd_vel_y = cmd_vel_.linear.y;
-  // cmd_rad_z = cmd_vel_.angular.z;
   {
-    double front_left_vel_target = cmd_vel_x - cmd_vel_y - cmd_rad_z * scale_yaw;
-    double front_right_vel_target = cmd_vel_x + cmd_vel_y + cmd_rad_z * scale_yaw;
-    double back_left_vel_target = cmd_vel_x + cmd_vel_y - cmd_rad_z * scale_yaw;
-    double back_right_vel_target = cmd_vel_x - cmd_vel_y + cmd_rad_z * scale_yaw;
+    double front_left_vel_target = chassis_cmd_vel_.linear.x - chassis_cmd_vel_.linear.y - chassis_cmd_vel_.angular.z *
+                                   scale_yaw;
+    double front_right_vel_target = chassis_cmd_vel_.linear.x + chassis_cmd_vel_.linear.y + chassis_cmd_vel_.angular.z *
+                                    scale_yaw;
+    double back_left_vel_target = chassis_cmd_vel_.linear.x + chassis_cmd_vel_.linear.y - chassis_cmd_vel_.angular.z *
+                                  scale_yaw;
+    double back_right_vel_target = chassis_cmd_vel_.linear.x - chassis_cmd_vel_.linear.y + chassis_cmd_vel_.angular.z *
+                                   scale_yaw;
     front_left_joint_.setVel(front_left_vel_target / wheel_radius_);
     front_right_joint_.setVel(front_right_vel_target / wheel_radius_);
     back_left_joint_.setVel(back_left_vel_target / wheel_radius_);
@@ -226,8 +179,8 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
   {
     debug_pub_msgs.data.resize(3);
     debug_pub_msgs.data[0] = front_left_joint_.joint_.getVelocity();
-    debug_pub_msgs.data[1] = cmd_vel_x;
-    debug_pub_msgs.data[2] = chassis_vx;
+    debug_pub_msgs.data[1] = chassis_cmd_vel_.linear.x;
+    debug_pub_msgs.data[2] = chassis_vx_;
     debug_pub_.publish(debug_pub_msgs);
   }
   //debug end
@@ -249,12 +202,7 @@ void HeroChassisController::state_world()
     state_changed_ = false;
     ROS_INFO("[Chassis] Enter WORLD");
   }
-  double temp_sin = sin(chassis_yaw_);
-  double temp_cos = cos(chassis_yaw_);
-  double temp_vel_x = cmd_vel_.linear.x * temp_cos + cmd_vel_.linear.y * temp_sin;
-  double temp_vel_y = cmd_vel_.linear.x * -temp_sin + cmd_vel_.linear.y * temp_cos;
-  cmd_vel_.linear.x = temp_vel_x;
-  cmd_vel_.linear.y = temp_vel_y;
+  rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
 }
 
 void HeroChassisController::state_follow()
@@ -273,12 +221,7 @@ void HeroChassisController::state_twist()
     state_changed_ = false;
     ROS_INFO("[Chassis] Enter TWISE");
   }
-  double temp_sin = sin(-rale_gimbal_yaw_pos);
-  double temp_cos = cos(-rale_gimbal_yaw_pos);
-  double temp_vel_x = cmd_vel_.linear.x * temp_cos + cmd_vel_.linear.y * temp_sin;
-  double temp_vel_y = cmd_vel_.linear.x * -temp_sin + cmd_vel_.linear.y * temp_cos;
-  cmd_vel_.linear.x = temp_vel_x;
-  cmd_vel_.linear.y = temp_vel_y;
+  rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
 }
 
 void HeroChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg)
@@ -341,12 +284,12 @@ void HeroChassisController::updateOdom(const ros::Time& time, const ros::Duratio
                     front_right_joint_.joint_.getVelocity() * wheel_radius_,
                     back_left_joint_.joint_.getVelocity() * wheel_radius_,
                     back_right_joint_.joint_.getVelocity() * wheel_radius_,
-                    scale_yaw, chassis_vx, chassis_vy, chassis_wz);
-  double psi_mid = chassis_yaw_ + 0.5 * chassis_wz * dt; // 本周期中点朝向
+                    scale_yaw, chassis_vx_, chassis_vy_, chassis_wz_);
+  double psi_mid = chassis_yaw_ + 0.5 * chassis_wz_ * dt; // 本周期中点朝向
   double c = std::cos(psi_mid), s = std::sin(psi_mid);
-  chassis_x_ += (c * chassis_vx - s * chassis_vy) * dt;
-  chassis_y_ += (s * chassis_vx + c * chassis_vy) * dt;
-  chassis_yaw_ += chassis_wz * dt;
+  chassis_x_ += (c * chassis_vx_ - s * chassis_vy_) * dt;
+  chassis_y_ += (s * chassis_vx_ + c * chassis_vy_) * dt;
+  chassis_yaw_ += chassis_wz_ * dt;
 
   publishTf(time);
 }
@@ -368,6 +311,59 @@ void HeroChassisController::publishTf(const ros::Time& time)
 
   tf_broadcaster_->sendTransform(odom_tf_);
 }
+
+void HeroChassisController::rotateCmdVel(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double yaw)
+{
+  Eigen::Vector2d v(origin.linear.x, origin.linear.y);
+  Eigen::Rotation2Dd rotation(yaw);
+  Eigen::Matrix2d rot_mat = rotation.toRotationMatrix();
+  Eigen::Vector2d v_rotated = rot_mat * v;
+  output.linear.x = v_rotated(0);
+  output.linear.y = v_rotated(1);
+}
+
+void HeroChassisController::chassis_acc_limit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output,
+                                              double yaw,
+                                              ros::Duration period)
+{
+  static double last_yaw = yaw;
+  double dt = period.toSec();
+  rotateCmdVel(output, output, last_yaw - yaw);
+  last_yaw = yaw;
+  double dVx = origin.linear.x - output.linear.x;
+  double dVy = origin.linear.y - output.linear.y;
+  double dVLinear_sq = dVx * dVx + dVy * dVy;
+  double accLinear_sq = linear_max_acceleration * linear_max_acceleration * dt * dt;
+  if (dVLinear_sq > accLinear_sq)
+  {
+    double scale = std::sqrt(accLinear_sq / dVLinear_sq);
+    dVx *= scale;
+    dVy *= scale;
+    output.linear.x += dVx;
+    output.linear.y += dVy;
+  }
+  else
+  {
+    output.linear.x = origin.linear.x;
+    output.linear.y = origin.linear.y;
+  }
+
+  double dWz = origin.angular.z - output.angular.z;
+  double dWz_max = angular_max_acceleration * dt;
+  if (dWz > dWz_max)
+  {
+    output.angular.z += dWz_max;
+  }
+  else if (dWz < -dWz_max)
+  {
+    output.angular.z -= dWz_max;
+  }
+  else
+  {
+    output.angular.z = origin.angular.z;
+  }
+}
+
 
 PLUGINLIB_EXPORT_CLASS(hero_chassis_controller::HeroChassisController, controller_interface::ControllerBase)
 }
