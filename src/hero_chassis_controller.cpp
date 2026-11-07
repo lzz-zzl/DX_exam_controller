@@ -10,6 +10,7 @@
 #include <sensor_msgs/JointState.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <rm_msgs_exam/ChassisCmd.h>
 
 namespace hero_chassis_controller
 {
@@ -99,6 +100,8 @@ bool HeroChassisController::init(hardware_interface::EffortJointInterface* effor
 
   cmd_vel_sub_ = controller_nh.subscribe<geometry_msgs::Twist>(
       "cmd_vel", 1, &HeroChassisController::cmdVelCallback, this);
+  chassis_cmd_sub_ = controller_nh.subscribe<rm_msgs_exam::ChassisCmd>(
+      "cmd", 1, &HeroChassisController::chassisCmdCallback, this);
   debug_sub_ = controller_nh.subscribe(
       "debug", 1, &HeroChassisController::debugCallback, this);
   joint_state_sub_ = controller_nh.subscribe("/joint_states", 1, &HeroChassisController::jointStatesCallback, this);
@@ -134,6 +137,17 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
   }
 
   cmd_vel_ = cmd_rt_buffer_.readFromRT()->cmd_vel_;
+  chassis_cmd_ = cmd_rt_buffer_.readFromRT()->cmd_chassis_;
+  if (state_ != chassis_cmd_.mode)
+  {
+    state_changed_ = true;
+    state_ = chassis_cmd_.mode;
+  }
+  if (chassis_cmd_.accel.linear.x != 0 && chassis_cmd_.accel.angular.z != 0)
+  {
+    linear_max_acceleration = chassis_cmd_.accel.linear.x;
+    angular_max_acceleration = chassis_cmd_.accel.angular.z;
+  }
 
   if ((time - cmd_rt_buffer_.readFromRT()->stamp_).toSec() > cmd_vel_timeout_)
   {
@@ -225,7 +239,7 @@ void HeroChassisController::stateFollow(ros::Duration period)
     ROS_INFO("[Chassis] Enter FOLLOW");
   }
   rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
-  cmd_vel_.angular.z = follow_pid_.computeCommand(rale_gimbal_yaw_pos, period);
+  cmd_vel_.angular.z = follow_pid_.computeCommand(rale_gimbal_yaw_pos, period) + chassis_cmd_.follow_vel_des;
 }
 
 void HeroChassisController::stateTwist()
@@ -264,6 +278,12 @@ void HeroChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr&
   cmd_rt_buffer_.writeFromNonRT(cmd_struct_);
 }
 
+void HeroChassisController::chassisCmdCallback(const rm_msgs_exam::ChassisCmd::ConstPtr& msg)
+{
+  cmd_struct_.cmd_chassis_ = *msg;
+  cmd_rt_buffer_.writeFromNonRT(cmd_struct_);
+}
+
 
 control_toolbox::Pid* debug_pid = nullptr;
 
@@ -273,11 +293,6 @@ void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::Con
   {
     ROS_ERROR_THROTTLE(1.0, "[Chassis] Debug msg data size is too small!");
     return;
-  }
-  if (static_cast<int>(msg->data[5]) != state_)
-  {
-    state_changed_ = true;
-    state_ = static_cast<int>(msg->data[5]);
   }
   if (static_cast<int>(msg->data[0]) == 0) // cmd_state == 0 → PID 调试
   {

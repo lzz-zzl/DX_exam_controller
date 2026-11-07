@@ -11,6 +11,7 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <ros/ros.h>
 #include <control_toolbox/pid.h>
+#include <rm_msgs_exam/ChassisCmd.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <sensor_msgs/JointState.h>
@@ -23,7 +24,7 @@ namespace hero_chassis_controller
 struct Command
 {
   geometry_msgs::Twist cmd_vel_;
-  // rm_msgs_exam::ChassisCmd cmd_chassis_;
+  rm_msgs_exam::ChassisCmd cmd_chassis_;
   std_msgs::Float64MultiArray debug_msg_;
   ros::Time stamp_;
 };
@@ -65,10 +66,6 @@ public:
 
   ~HeroChassisController() override = default;
 
-  // static void acceleration_limit(double wish_vel_x, double wish_vel_y, double wish_rad_z, double dt,
-  //                                double& cmd_vel_x,
-  //                                double& cmd_vel_y, double& cmd_rad_z);
-
   bool init(hardware_interface::EffortJointInterface* effort_joint_interface,
             ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) override;
 
@@ -87,6 +84,7 @@ private:
   bool state_changed_ = false;
   ros::Time last_change_;
   ros::Subscriber cmd_vel_sub_;
+  ros::Subscriber chassis_cmd_sub_;
   ros::Subscriber debug_sub_;
   ros::Subscriber joint_state_sub_;
 
@@ -95,6 +93,7 @@ private:
   Command cmd_struct_{};
   realtime_tools::RealtimeBuffer<Command> cmd_rt_buffer_;
   void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg);
+  void chassisCmdCallback(const rm_msgs_exam::ChassisCmd::ConstPtr& msg);
   void debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg);
   void jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
@@ -102,6 +101,7 @@ private:
 
   geometry_msgs::Twist cmd_vel_;         //初始命令速度
   geometry_msgs::Twist chassis_cmd_vel_; // 确保在地面坐标系下加速度限制
+  rm_msgs_exam::ChassisCmd chassis_cmd_;
 
   //地盘
   double wheel_base = 0.4;
@@ -123,10 +123,10 @@ private:
   void stateFollow(ros::Duration period);
   void stateTwist();
   void stateSinSpin(ros::Duration period);
-
-  void rotateCmdVel(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double yaw);
   void chassis_acc_limit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double chassis_wz,
                          ros::Duration period);
+
+  static void rotateCmdVel(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double yaw);
   //tfS
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   geometry_msgs::TransformStamped odom_tf_;

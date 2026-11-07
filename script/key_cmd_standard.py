@@ -2,7 +2,7 @@
 import rospy
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist, PointStamped
-from rm_msgs_exam.msg import GimbalCmd
+from rm_msgs_exam.msg import GimbalCmd, ChassisCmd
 from pynput import keyboard
 
 PI = 3.14159265358979323846
@@ -106,6 +106,15 @@ def on_release(key):
         return False
 
 
+def build_chassis_cmd(chassis_state, acc_linear, acc_angular):
+    """根据 gimbal_state 填充 gimbalCmd 的各字段"""
+    msg = ChassisCmd()
+    msg.mode = int(chassis_state)
+    msg.accel.linear.x = acc_linear
+    msg.accel.angular.z = acc_angular
+    return msg
+
+
 def build_gimbal_cmd(msg, gimbal_state, shoot_state):
     """根据 gimbal_state 填充 gimbalCmd 的各字段"""
     msg.mode = int(gimbal_state)
@@ -146,6 +155,8 @@ def main():
                           Float64MultiArray, queue_size=1)
     cmd_vel_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd_vel',
                                   Twist, queue_size=1)
+    chassis_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd',
+                                  ChassisCmd, queue_size=1)
     gimbal_pub = rospy.Publisher('/controller/hero_gimbal_controller/cmd',
                                  GimbalCmd, queue_size=1)
     rate = rospy.Rate(40)
@@ -216,6 +227,9 @@ def main():
         cmd_vel_msg.angular.y = 0.0
         cmd_vel_msg.angular.z = vel_az_rela
         cmd_vel_pub.publish(cmd_vel_msg)
+
+        chassis_cmd_msg = build_chassis_cmd(chassis_state, 3, 8)
+        chassis_pub.publish(chassis_cmd_msg)
 
         # ---- 云台指令 ----
         gimbal_cmd_msg = build_gimbal_cmd(gimbal_cmd_msg, gimbal_state, shoot_state)
