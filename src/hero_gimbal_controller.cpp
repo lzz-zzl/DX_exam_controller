@@ -83,7 +83,7 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
   controller_nh.param("pid_pitch_kd", init_pitch_kd_, 1.0);
   controller_nh.param("int_pitch_i_limit", int_pitch_i_limit_, 2.0);
   debug_pub_ = controller_nh.advertise<std_msgs::Float64MultiArray>("/hero_gimbal_controller/pub_debug", 1);
-  gimbal_cmd_sub_ = controller_nh.subscribe("/controller/gimbal_controller/cmd", 1,
+  gimbal_cmd_sub_ = controller_nh.subscribe("/controller/hero_gimbal_controller/cmd", 1,
                                             &HeroGimbalController::gimbalCmdCallback,
                                             this);
   imu_sub_ = controller_nh.subscribe("/gimbal_imu/data_filtered", 1, &HeroGimbalController::imuCallback, this);
@@ -185,7 +185,7 @@ void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::Cons
     {
       case 0:
         debug_pid = nullptr;
-        break;
+        return;
       case 1:
         debug_pid = &yaw_joint.pos_pid_;
         break;
@@ -199,9 +199,9 @@ void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::Cons
         debug_pid = &pitch_joint.vel_pid_;
         break;
       default:
-        ROS_WARN_THROTTLE(1.0,
-                          "[HeroGimbalController] unknown debug_id = %d (expect 1=yaw, 2=pitch)",
-                          debug_id);
+        // ROS_WARN_THROTTLE(1.0,
+        //                   "[HeroGimbalController] unknown debug_id = %d (expect 1=yaw, 2=pitch)",
+        //                   debug_id);
         return;
     }
     // setGains(p, i, d, i_max, i_min)

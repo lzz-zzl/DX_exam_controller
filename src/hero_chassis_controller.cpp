@@ -77,7 +77,16 @@ bool HeroChassisController::init(hardware_interface::EffortJointInterface* effor
   ros::NodeHandle nh("wheel_pid_params");
   if (!init_pid.init(nh))
   {
-    ROS_ERROR("Failed to initialize PID from parameters.");
+    ROS_ERROR("[HeroChassisController]Failed to wheel PID from parameters.");
+  }
+  ros::NodeHandle nh_follow("follow_pid_params");
+  if (!follow_pid_.init(nh))
+  {
+    ROS_WARN("[HeroChassisController]Failed to chassis follow PID from parameters.");
+  }
+  else
+  {
+    follow_pid_.setGains(4.0, 0, 0, 4, -4);
   }
   front_left_joint_.pid_ = init_pid;
   front_right_joint_.pid_ = init_pid;
@@ -136,19 +145,22 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
   switch (state_)
   {
     case RAW:
-      state_raw();
-      break;
-    case WORLD:
-      state_world();
+      stateRaw();
       break;
     case FOLLOW:
-      state_follow();
+      stateFollow(period);
       break;
     case TWIST:
-      state_twist();
+      stateTwist();
+      break;
+    case WORLD:
+      stateWorld();
+      break;
+    case SIN_SPIN:
+      stateSinSpin(period);
       break;
     default:
-      ROS_ERROR("[hero_chassis_controller] state mismatch!");
+      ROS_WARN("[hero_chassis_controller] state mismatch!");
       break;
   }
   chassis_acc_limit(cmd_vel_, chassis_cmd_vel_, chassis_yaw_, period);
@@ -186,7 +198,7 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
   //debug end
 }
 
-void HeroChassisController::state_raw()
+void HeroChassisController::stateRaw()
 {
   if (state_changed_)
   {
@@ -195,7 +207,7 @@ void HeroChassisController::state_raw()
   }
 }
 
-void HeroChassisController::state_world()
+void HeroChassisController::stateWorld()
 {
   if (state_changed_)
   {
@@ -205,24 +217,45 @@ void HeroChassisController::state_world()
   rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
 }
 
-void HeroChassisController::state_follow()
+void HeroChassisController::stateFollow(ros::Duration period)
 {
   if (state_changed_)
   {
     state_changed_ = false;
     ROS_INFO("[Chassis] Enter FOLLOW");
   }
+  rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
+  cmd_vel_.angular.z = follow_pid_.computeCommand(rale_gimbal_yaw_pos, period);
 }
 
-void HeroChassisController::state_twist()
+void HeroChassisController::stateTwist()
 {
   if (state_changed_)
   {
     state_changed_ = false;
-    ROS_INFO("[Chassis] Enter TWISE");
+    ROS_INFO("[Chassis] Enter TWIST");
   }
   rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
 }
+
+void HeroChassisController::stateSinSpin(ros::Duration period)
+{
+  if (state_changed_)
+  {
+    state_changed_ = false;
+    ROS_INFO("[Chassis] Enter SIN_SPIN");
+  }
+  rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
+  static double step = 0;
+  static double sin_period = 2;
+  step += 2 * PI * period.toSec() / sin_period;
+  if (step > 2 * PI)
+  {
+    step -= 2 * PI;
+  }
+  cmd_vel_.angular.z = 2 * sin(step) + 7;
+}
+
 
 void HeroChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg)
 {
@@ -231,6 +264,8 @@ void HeroChassisController::cmdVelCallback(const geometry_msgs::Twist::ConstPtr&
   cmd_rt_buffer_.writeFromNonRT(cmd_struct_);
 }
 
+
+control_toolbox::Pid* debug_pid = nullptr;
 
 void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
@@ -244,20 +279,35 @@ void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::Con
     state_changed_ = true;
     state_ = static_cast<int>(msg->data[5]);
   }
-  // double kp = msg->data[5];
-  // double ki = msg->data[6];
-  // double kd = msg->data[7];
-
+  if (static_cast<int>(msg->data[0]) == 0) // cmd_state == 0 → PID 调试
+  {
+    int debug_id = static_cast<int>(msg->data[1]);
+    switch (debug_id)
+    {
+      case 0:
+        debug_pid = nullptr;
+        return;
+      case 1:
+        debug_pid = &follow_pid_;
+        break;
+      default:
+        debug_pid = nullptr;
+        // ROS_WARN_THROTTLE(1.0,
+        //                   "[HerochassisController] unknown debug_id = %d (expect 1=yaw, 2=pitch)",
+        //                   debug_id);
+        return;
+    }
+    // setGains(p, i, d, i_max, i_min)
+    debug_pid->setGains(msg->data[2], // Kp
+                        msg->data[3], // Ki
+                        msg->data[4], // Kd
+                        10.0,         // i_max
+                        -10.0);       // i_min
+  }
   // front_left_joint_.pid_.setGains(kp, ki, kd, 20, -20);
   // front_right_joint_.pid_.setGains(kp, ki, kd, 20, -20);
   // back_left_joint_.pid_.setGains(kp, ki, kd, 20, -20);
   // back_right_joint_.pid_.setGains(kp, ki, kd, 20, -20);
-  // if (abs(msg->data[0] - 1) < 1e-3)
-  // {
-  //   chassis_x_ = 0.0;
-  //   chassis_y_ = 0.0;
-  //   chassis_yaw_ = 0.0;
-  // }
 }
 
 void HeroChassisController::jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg)

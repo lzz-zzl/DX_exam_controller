@@ -100,7 +100,6 @@ private:
 
   std_msgs::Float64MultiArray debug_pub_msgs;
 
-  // double cmd_vel_x = 0, cmd_vel_y = 0, cmd_rad_z = 0; //限制处理速度
   geometry_msgs::Twist cmd_vel_;         //初始命令速度
   geometry_msgs::Twist chassis_cmd_vel_; // 确保在地面坐标系下加速度限制
 
@@ -119,10 +118,11 @@ private:
   double max_wheel_velocity_ = 100.0; // 轮子最大角速度 (rad/s)
 
   double rale_gimbal_yaw_pos = 0;
-  void state_raw();
-  void state_world();
-  void state_follow();
-  void state_twist();
+  void stateRaw();
+  void stateWorld();
+  void stateFollow(ros::Duration period);
+  void stateTwist();
+  void stateSinSpin(ros::Duration period);
 
   void rotateCmdVel(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double yaw);
   void chassis_acc_limit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double chassis_wz,
@@ -139,11 +139,14 @@ private:
 
   enum
   {
-    RAW,
-    FOLLOW,
-    TWIST,
-    WORLD
+    RAW = 0,
+    FOLLOW = 1,
+    TWIST = 2,
+    WORLD = 3,
+    SIN_SPIN = 4,
   };
+
+  control_toolbox::Pid follow_pid_;
 };
 } // namespace hero_chassis_controller
 

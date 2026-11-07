@@ -22,3 +22,9 @@ wheel_pid_params:
   i: 0.0
   d: 0.0
   i_clamp: 4
+
+follow_pid_params:
+  p: 4.0
+  i: 0.0
+  d: 12.0
+  i_clamp: 4

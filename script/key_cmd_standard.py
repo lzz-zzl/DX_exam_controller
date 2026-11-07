@@ -21,8 +21,8 @@ pitch_step_per_frame = 0.05
 # ============ PID 增益 ============
 debug_kp = 0
 debug_Ki = 0.0
-debug_Kd = 1.2
-gain_step = 0.1
+debug_Kd = 0
+gain_step = 1
 
 # ============ 模块级状态 ============
 yaw_target = 0.0
@@ -82,7 +82,7 @@ def on_release(key):
                 debug_id = float(ch);
                 state_changed = True
         elif cmd_state == 2:
-            if ch in '0123':
+            if ch in '01234':
                 chassis_state = float(ch);
                 state_changed = True
         elif cmd_state == 3:
@@ -146,7 +146,7 @@ def main():
                           Float64MultiArray, queue_size=1)
     cmd_vel_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd_vel',
                                   Twist, queue_size=1)
-    gimbal_pub = rospy.Publisher('/controller/gimbal_controller/cmd',
+    gimbal_pub = rospy.Publisher('/controller/hero_gimbal_controller/cmd',
                                  GimbalCmd, queue_size=1)
     rate = rospy.Rate(40)
 
