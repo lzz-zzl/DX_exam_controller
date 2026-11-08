@@ -41,7 +41,7 @@ void Gimbal_joint::setTorBias(double tor)
 
 void Gimbal_joint::update(ros::Duration period)
 {
-  double dt = period.toSec();
+  // double dt = period.toSec();
   if (state == 0)
   {
     joint_.setCommand(0);
@@ -52,21 +52,23 @@ void Gimbal_joint::update(ros::Duration period)
   }
   else if (state == 2)
   {
+    uint64_t dt_ns = period.toNSec();
     double err = vel_target_ - joint_.getVelocity();
-    joint_.setCommand(vel_pid_.computeCommand(err, dt) + tor_bias_);
+    joint_.setCommand(vel_pid_.computeCommand(err, period) + tor_bias_);
   }
   else if (state == 3)
   {
     double err = pos_target_ - world_pos;
     err = std::remainder(err, 2 * PI);
     test[0] = err;
-    test[1] = pos_pid_.computeCommand(err, dt) + tor_bias_;
+    test[1] = pos_pid_.computeCommand(err, period) + tor_bias_;
     joint_.setCommand(test[1]);
     // joint_.setCommand(pos_pid_.computeCommand(err, dt) + tor_bias_);
   }
 }
 
 PID* debug_pid = nullptr;
+// control_toolbox::Pid* debug_pid = nullptr;
 
 bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
                                 ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh)

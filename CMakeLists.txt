@@ -51,6 +51,11 @@ catkin_package(
         DEPENDS
         control_toolbox
         rm_msgs_exam
+        dynamic_reconfigure
+)
+
+generate_dynamic_reconfigure_options(
+        cfg/GimbalBase.cfg
 )
 
 ###########
@@ -72,6 +77,7 @@ add_library(${PROJECT_NAME}
 
 add_dependencies(${PROJECT_NAME}
         ${catkin_EXPORTED_TARGETS}
+        
 )
 
 target_link_libraries(${PROJECT_NAME}
