@@ -10,6 +10,7 @@ controller:
 
   hero_gimbal_controller:
     type: hero_gimbal_controller/HeroGimbalController
+    imu_name: gimbal_imu
 
 
   joint_state_controller:

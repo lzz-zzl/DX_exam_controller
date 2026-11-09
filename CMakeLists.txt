@@ -25,6 +25,7 @@ find_package(catkin REQUIRED
         tf2
         tf2_ros
         rm_msgs_exam
+        dynamic_reconfigure
 )
 
 ###################################
@@ -36,6 +37,11 @@ find_package(catkin REQUIRED
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
+generate_dynamic_reconfigure_options(
+        #        cfg/GimbalBase.cfg
+)
+
 catkin_package(
         INCLUDE_DIRS
         include
@@ -48,15 +54,12 @@ catkin_package(
         hardware_interface
         forward_command_controller
         pluginlib
-        DEPENDS
         control_toolbox
         rm_msgs_exam
         dynamic_reconfigure
+        DEPENDS
 )
 
-generate_dynamic_reconfigure_options(
-        cfg/GimbalBase.cfg
-)
 
 ###########
 ## Build ##
@@ -77,7 +80,7 @@ add_library(${PROJECT_NAME}
 
 add_dependencies(${PROJECT_NAME}
         ${catkin_EXPORTED_TARGETS}
-        
+
 )
 
 target_link_libraries(${PROJECT_NAME}

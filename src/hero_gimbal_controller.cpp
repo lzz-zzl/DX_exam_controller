@@ -52,18 +52,14 @@ void Gimbal_joint::update(ros::Duration period)
   }
   else if (state == 2)
   {
-    uint64_t dt_ns = period.toNSec();
-    double err = vel_target_ - joint_.getVelocity();
+    double err = vel_target_ - world_vel;
     joint_.setCommand(vel_pid_.computeCommand(err, period) + tor_bias_);
   }
   else if (state == 3)
   {
     double err = pos_target_ - world_pos;
     err = std::remainder(err, 2 * PI);
-    test[0] = err;
-    test[1] = pos_pid_.computeCommand(err, period) + tor_bias_;
-    joint_.setCommand(test[1]);
-    // joint_.setCommand(pos_pid_.computeCommand(err, dt) + tor_bias_);
+    joint_.setCommand(pos_pid_.computeCommand(err, period) + tor_bias_);
   }
 }
 
@@ -91,19 +87,35 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
   imu_sub_ = controller_nh.subscribe("/gimbal_imu/data_filtered", 1, &HeroGimbalController::imuCallback, this);
   debug_sub_ = controller_nh.subscribe("/hero_gimbal_controller/sub_debug", 1, &HeroGimbalController::debugCallback,
                                        this);
+
   try
   {
-    pitch_joint.joint_ = effort_joint_interface->getHandle("pitch_joint");
-    yaw_joint.joint_ = effort_joint_interface->getHandle("yaw_joint");
+    pitch_joint_.joint_ = effort_joint_interface->getHandle("pitch_joint");
+    yaw_joint_.joint_ = effort_joint_interface->getHandle("yaw_joint");
   }
   catch (const hardware_interface::HardwareInterfaceException& e)
   {
     ROS_ERROR("[HeroGimbalController] getHandle failed: %s", e.what());
     return false;
   }
-  yaw_joint.pos_pid_.setGains(init_yaw_kp_, init_yaw_ki_, init_yaw_kd_, int_yaw_i_limit_, -int_yaw_i_limit_);
-  pitch_joint.pos_pid_.setGains(init_pitch_kp_, init_pitch_ki_, init_pitch_kd_, int_pitch_i_limit_,
-                                -int_pitch_i_limit_);
+  yaw_joint_.pos_pid_.setGains(init_yaw_kp_, init_yaw_ki_, init_yaw_kd_, int_yaw_i_limit_, -int_yaw_i_limit_);
+  pitch_joint_.pos_pid_.setGains(init_pitch_kp_, init_pitch_ki_, init_pitch_kd_, int_pitch_i_limit_,
+                                 -int_pitch_i_limit_);
+  yaw_joint_.vel_pid_.setGains(20, 2, 0, 10, -10);
+  pitch_joint_.vel_pid_.setGains(20, 2, 0, 10, -10);
+
+  has_imu_ = controller_nh.hasParam("imu_name");
+  if (has_imu_)
+  {
+    imu_name_ = controller_nh.param("imu_name", imu_name_, static_cast<std::string>("gimbal_imu"));
+
+    imu_sub_ = controller_nh.subscribe("/gimbal_imu/data_filtered", 1, &HeroGimbalController::imuCallback, this);
+    ROS_WARN_ONCE("has imu");
+  }
+  else
+  {
+    ROS_INFO("Param imu_name has not set, use motors' data instead of imu.");
+  }
 
   ROS_INFO("[Hero_gimbal_controller] init v1.1 ");
   return true;
@@ -122,15 +134,16 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
   }
   if (gimbal_cmd_msg_.mode == 0)
   {
-    // yaw_joint.getTor_target();
+    yaw_joint_.setVel(gimbal_cmd_msg_.rate_yaw);
+    pitch_joint_.setVel(gimbal_cmd_msg_.rate_pitch);
   }
   if (gimbal_cmd_msg_.mode == 1)
   {
-    yaw_joint.setPos(gimbal_cmd_msg_.pos_yaw);
-    pitch_joint.setPos(gimbal_cmd_msg_.pos_pitch);
+    yaw_joint_.setPos(gimbal_cmd_msg_.pos_yaw);
+    pitch_joint_.setPos(gimbal_cmd_msg_.pos_pitch);
   }
-  yaw_joint.update(period);
-  pitch_joint.update(period);
+  yaw_joint_.update(period);
+  pitch_joint_.update(period);
 
   //debug
   static int debug_count = 0;
@@ -138,14 +151,14 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
   if (debug_count % 10 == 0)
   {
     debug_pub_msgs.data.resize(8);
-    debug_pub_msgs.data[0] = pitch_joint.world_pos;
-    debug_pub_msgs.data[1] = gimbal_cmd_msg_.pos_pitch;
-    yaw_joint.pos_pid_.getGains(debug_pub_msgs.data[2], debug_pub_msgs.data[5], debug_pub_msgs.data[3],
-                                debug_pub_msgs.data[5],
-                                debug_pub_msgs.data[5]);
+    debug_pub_msgs.data[0] = yaw_joint_.world_vel;
+    debug_pub_msgs.data[1] = gimbal_cmd_msg_.rate_pitch;
+    yaw_joint_.pos_pid_.getGains(debug_pub_msgs.data[2], debug_pub_msgs.data[5], debug_pub_msgs.data[3],
+                                 debug_pub_msgs.data[5],
+                                 debug_pub_msgs.data[5]);
     debug_pub_msgs.data[4] = test[0];
     debug_pub_msgs.data[6] = test[1];
-    debug_pub_msgs.data[7] = pitch_joint.joint_.getPosition();
+    debug_pub_msgs.data[7] = pitch_joint_.joint_.getPosition();
 
     debug_pub_.publish(debug_pub_msgs);
   }
@@ -169,8 +182,10 @@ void HeroGimbalController::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   tf2::Matrix3x3 m(q);
   double roll, pitch, yaw;
   m.getRPY(roll, pitch, yaw);
-  yaw_joint.world_pos = yaw;
-  pitch_joint.world_pos = -std::remainder(PI - roll, 2 * PI);
+  yaw_joint_.world_pos = yaw;
+  pitch_joint_.world_pos = -std::remainder(PI - roll, 2 * PI);
+  yaw_joint_.world_vel = -msg->angular_velocity.z;
+  pitch_joint_.world_vel = msg->angular_velocity.x;
 }
 
 void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
@@ -189,16 +204,16 @@ void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::Cons
         debug_pid = nullptr;
         return;
       case 1:
-        debug_pid = &yaw_joint.pos_pid_;
+        debug_pid = &yaw_joint_.pos_pid_;
         break;
       case 2:
-        debug_pid = &pitch_joint.pos_pid_;
+        debug_pid = &pitch_joint_.pos_pid_;
         break;
       case 3:
-        debug_pid = &yaw_joint.vel_pid_;
+        debug_pid = &yaw_joint_.vel_pid_;
         break;
       case 4:
-        debug_pid = &pitch_joint.vel_pid_;
+        debug_pid = &pitch_joint_.vel_pid_;
         break;
       default:
         // ROS_WARN_THROTTLE(1.0,

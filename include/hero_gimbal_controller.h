@@ -14,6 +14,7 @@
 #include <sensor_msgs/Imu.h>
 #include <memory.h>
 #include <PID.h>
+#include <hardware_interface/imu_sensor_interface.h>
 #include <control_toolbox/pid.h>
 
 namespace hero_gimbal_controller
@@ -26,10 +27,10 @@ public:
   Gimbal_joint() = default;
 
   hardware_interface::JointHandle joint_;
-  // PID vel_pid_;
-  // PID pos_pid_;
-  control_toolbox::Pid vel_pid_;
-  control_toolbox::Pid pos_pid_;
+  PID vel_pid_;
+  PID pos_pid_;
+  // control_toolbox::Pid vel_pid_;
+  // control_toolbox::Pid pos_pid_;
 
   int state = 0;
   /*
@@ -52,16 +53,17 @@ public:
   void update(ros::Duration dt);
 
 
-  double world_pos = 0;
+  double world_pos{};
+  double world_vel{};
 
 private:
   double rad_max_limit = INFINITY;
   double tor_max_limit = INFINITY;
 
-  double pos_target_ = 0;
-  double vel_target_ = 0;
-  double tor_target_ = 0;
-  double tor_bias_ = 0;
+  double pos_target_{};
+  double vel_target_{};
+  double tor_target_{};
+  double tor_bias_{};
 };
 
 
@@ -88,16 +90,19 @@ private:
   ros::Time last_cmd_time_;
   double gimbal_cmd_timeout_ = 0.5;
 
-  ros::Subscriber gimbal_cmd_sub_;
-  rm_msgs_exam::GimbalCmd gimbal_cmd_msg_;
-  ros::Subscriber imu_sub_;
-  sensor_msgs::Imu imu_mssg;
-  ros::Subscriber debug_sub_;
+  ros::Subscriber gimbal_cmd_sub_{};
+  rm_msgs_exam::GimbalCmd gimbal_cmd_msg_{};
+  ros::Subscriber imu_sub_{};
+  sensor_msgs::Imu imu_mssg{};
+  ros::Subscriber debug_sub_{};
 
-  ros::Publisher debug_pub_;
-  std_msgs::Float64MultiArray debug_pub_msgs;
+  ros::Publisher debug_pub_{};
+  std_msgs::Float64MultiArray debug_pub_msgs{};
 
-  Gimbal_joint yaw_joint, pitch_joint;
+  bool has_imu_ = false;
+  Gimbal_joint yaw_joint_, pitch_joint_;
+  std::string imu_name_{};
+  hardware_interface::ImuSensorHandle imu_sensor_handle_;
   // double
 
   void gimbalCmdCallback(const rm_msgs_exam::GimbalCmd::ConstPtr& msg);

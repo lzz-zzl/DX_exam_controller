@@ -14,20 +14,24 @@ cmd_state = 0  # 0: PID调试  1: debug_id选择  2: 底盘状态  3: 云台状�
 vx = 4
 vy = 4
 wz = 10.0
+yaw = 4
+pitch = 2
 
 yaw_step_per_frame = 0.1
 pitch_step_per_frame = 0.05
 
 # ============ PID 增益 ============
-debug_kp = 0
-debug_Ki = 0.0
+debug_kp = 10.0
+debug_Ki = 1.0
 debug_Kd = 0
 gain_step = 1
 
 # ============ 模块级状态 ============
 yaw_target = 0.0
 pitch_target = 0.0
-gimbal_state = 1.0
+yaw_vel_target = 0.0
+pitch_vel_target = 0.0
+gimbal_state = 0.0
 chassis_state = 2.0
 debug_id = 0
 
@@ -86,7 +90,7 @@ def on_release(key):
                 chassis_state = float(ch);
                 state_changed = True
         elif cmd_state == 3:
-            if ch in '123':
+            if ch in '0123':
                 gimbal_state = float(ch);
                 state_changed = True
 
@@ -124,17 +128,15 @@ def build_gimbal_cmd(msg, gimbal_state, shoot_state):
     msg.accel_yaw = 0.0
     msg.rate_pitch = 0.0
     msg.accel_pitch = 0.0
-    # msg.pos_yaw = 0.0
-    # msg.pos_pitch = 0.0
     msg.bullet_speed = 0.0
     msg.traj_yaw = 0.0
     msg.traj_pitch = 0.0
     msg.traj_frame_id = ""
 
     if msg.mode == 0:  # RATE
-        msg.rate_yaw = 0.0
+        msg.rate_yaw = yaw_vel_target
         msg.accel_yaw = 0.0
-        msg.rate_pitch = 0.0
+        msg.rate_pitch = pitch_vel_target
         msg.accel_pitch = 0.0
     elif msg.mode == 1:  # POS
         msg.pos_yaw = yaw_target
@@ -149,9 +151,10 @@ def build_gimbal_cmd(msg, gimbal_state, shoot_state):
 
 def main():
     global yaw_target, pitch_target, chassis_state, debug_id, gimbal_state, cmd_state
+    global yaw_vel_target, pitch_vel_target
 
     rospy.init_node('keyboard_teleop')
-    pub = rospy.Publisher('/controller/hero_chassis_controller/debug',
+    pub = rospy.Publisher('/hero_gimbal_controller/sub_debug',
                           Float64MultiArray, queue_size=1)
     cmd_vel_pub = rospy.Publisher('/controller/hero_chassis_controller/cmd_vel',
                                   Twist, queue_size=1)
@@ -177,6 +180,8 @@ def main():
         vel_y_rela = 0.0
         vel_az_rela = 0.0
         shoot_state = 0.0
+        yaw_vel_target = 0.0
+        pitch_vel_target = 0.0
 
         if 'w' in current_keys: vel_x_rela = vx
         if 's' in current_keys: vel_x_rela = -vx
@@ -190,10 +195,18 @@ def main():
             # chassis_state = 2
 
         # ---- 云台目标：按住持续增加 ----
-        if 'f' in current_keys: yaw_target += yaw_step_per_frame
-        if 'h' in current_keys: yaw_target -= yaw_step_per_frame
-        if 'g' in current_keys: pitch_target += pitch_step_per_frame
-        if 't' in current_keys: pitch_target -= pitch_step_per_frame
+        if 'f' in current_keys:
+            yaw_target += yaw_step_per_frame
+            yaw_vel_target = yaw
+        if 'h' in current_keys:
+            yaw_target -= yaw_step_per_frame
+            yaw_vel_target = -yaw
+        if 'g' in current_keys:
+            pitch_target += pitch_step_per_frame
+            pitch_vel_target = pitch
+        if 't' in current_keys:
+            pitch_target -= pitch_step_per_frame
+            pitch_vel_target = -pitch
         if 'y' in current_keys: shoot_state = 1.0
 
         # yaw 限幅到 [-PI, PI]

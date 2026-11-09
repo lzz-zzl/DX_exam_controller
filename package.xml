@@ -26,6 +26,8 @@
     <depend>control_toolbox</depend>
 
     <depend>rm_msgs_exam</depend>
+    <build_depend>dynamic_reconfigure</build_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
 
     <export>
         <controller_interface plugin="${prefix}/hero_controller_plugins.xml"/>
