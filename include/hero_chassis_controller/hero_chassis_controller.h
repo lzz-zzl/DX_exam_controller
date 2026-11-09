@@ -134,7 +134,7 @@ private:
   double chassis_y_ = 0.0;
   double chassis_yaw_ = 0.0;
   void updateOdom(const ros::Time& time, const ros::Duration& period);
-
+  void reset();
   void publishTf(const ros::Time& time);
 
   enum

@@ -132,6 +132,11 @@ bool HeroChassisController::init(hardware_interface::EffortJointInterface* effor
 void HeroChassisController::starting(const ros::Time& /*time*/)
 {
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>();
+  front_left_joint_.pid_.reset();
+  front_right_joint_.pid_.reset();
+  back_left_joint_.pid_ .reset();
+  back_right_joint_.pid_.reset();
+
 }
 
 void HeroChassisController::update(const ros::Time& time, const ros::Duration& period)
@@ -301,6 +306,10 @@ void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::Con
     ROS_ERROR_THROTTLE(1.0, "[Chassis] Debug msg data size is too small!");
     return;
   }
+  if (static_cast<int>(msg->data[7]) == 1)
+  {
+    reset();
+  }
   if (static_cast<int>(msg->data[0]) == 0) // cmd_state == 0 → PID 调试
   {
     int debug_id = static_cast<int>(msg->data[1]);
@@ -360,6 +369,13 @@ void HeroChassisController::updateOdom(const ros::Time& time, const ros::Duratio
   chassis_yaw_ += chassis_wz_ * dt;
 
   publishTf(time);
+}
+
+void HeroChassisController::reset()
+{
+  chassis_x_ = 0.0;
+  chassis_y_ = 0.0;
+  chassis_yaw_ = 0.0;
 }
 
 void HeroChassisController::publishTf(const ros::Time& time)

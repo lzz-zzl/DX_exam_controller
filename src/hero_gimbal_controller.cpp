@@ -41,7 +41,6 @@ void Gimbal_joint::setTorBias(double tor)
 
 void Gimbal_joint::update(ros::Duration period)
 {
-  // double dt = period.toSec();
   if (state == 0)
   {
     joint_.setCommand(0);
@@ -134,7 +133,6 @@ void HeroGimbalController::starting(const ros::Time& /*time*/)
 
 void HeroGimbalController::update(const ros::Time& time, const ros::Duration& period)
 {
-  // double dt = period.toSec();
   if ((ros::Time::now() - last_cmd_time_).toSec() > gimbal_cmd_timeout_)
   {
     gimbal_cmd_msg_ = rm_msgs_exam::GimbalCmd();

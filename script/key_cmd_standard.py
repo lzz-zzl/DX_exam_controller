@@ -116,6 +116,7 @@ def build_chassis_cmd(chassis_state, acc_linear, acc_angular):
     msg.mode = int(chassis_state)
     msg.accel.linear.x = acc_linear
     msg.accel.angular.z = acc_angular
+    msg.follow_vel_des = yaw_vel_target
     return msg
 
 
