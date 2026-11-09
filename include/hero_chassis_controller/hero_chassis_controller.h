@@ -123,8 +123,8 @@ private:
   void stateFollow(ros::Duration period);
   void stateTwist();
   void stateSinSpin(ros::Duration period);
-  void chassis_acc_limit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double chassis_wz,
-                         ros::Duration period);
+  static void chassisAccLimit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double chassis_wz,
+                              ros::Duration period);
 
   static void rotateCmdVel(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output, double yaw);
   //tfS

@@ -134,9 +134,8 @@ void HeroChassisController::starting(const ros::Time& /*time*/)
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>();
   front_left_joint_.pid_.reset();
   front_right_joint_.pid_.reset();
-  back_left_joint_.pid_ .reset();
+  back_left_joint_.pid_.reset();
   back_right_joint_.pid_.reset();
-
 }
 
 void HeroChassisController::update(const ros::Time& time, const ros::Duration& period)
@@ -189,7 +188,7 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
       ROS_WARN("[hero_chassis_controller] state mismatch!");
       break;
   }
-  chassis_acc_limit(cmd_vel_, chassis_cmd_vel_, chassis_yaw_, period);
+  chassisAccLimit(cmd_vel_, chassis_cmd_vel_, chassis_yaw_, period);
 
   {
     double front_left_vel_target = chassis_cmd_vel_.linear.x - chassis_cmd_vel_.linear.y - chassis_cmd_vel_.angular.z *
@@ -240,7 +239,7 @@ void HeroChassisController::stateWorld()
     state_changed_ = false;
     ROS_INFO("[Chassis] Enter WORLD");
   }
-  rotateCmdVel(cmd_vel_, cmd_vel_, rale_gimbal_yaw_pos);
+  rotateCmdVel(cmd_vel_, cmd_vel_, chassis_yaw_);
 }
 
 void HeroChassisController::stateFollow(ros::Duration period)
@@ -406,9 +405,9 @@ void HeroChassisController::rotateCmdVel(const geometry_msgs::Twist& origin, geo
   output.linear.y = v_rotated(1);
 }
 
-void HeroChassisController::chassis_acc_limit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output,
-                                              double yaw,
-                                              ros::Duration period)
+void HeroChassisController::chassisAccLimit(const geometry_msgs::Twist& origin, geometry_msgs::Twist& output,
+                                            double yaw,
+                                            ros::Duration period)
 {
   static double last_yaw = yaw;
   double dt = period.toSec();
