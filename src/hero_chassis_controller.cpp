@@ -93,11 +93,18 @@ bool HeroChassisController::init(hardware_interface::EffortJointInterface* effor
   front_right_joint_.pid_ = init_pid;
   back_left_joint_.pid_ = init_pid;
   back_right_joint_.pid_ = init_pid;
-  front_left_joint_.joint_ = effort_joint_interface->getHandle("left_front_wheel_joint");
-  front_right_joint_.joint_ = effort_joint_interface->getHandle("right_front_wheel_joint");
-  back_left_joint_.joint_ = effort_joint_interface->getHandle("left_back_wheel_joint");
-  back_right_joint_.joint_ = effort_joint_interface->getHandle("right_back_wheel_joint");
-
+  try
+  {
+    front_left_joint_.joint_ = effort_joint_interface->getHandle("left_front_wheel_joint");
+    front_right_joint_.joint_ = effort_joint_interface->getHandle("right_front_wheel_joint");
+    back_left_joint_.joint_ = effort_joint_interface->getHandle("left_back_wheel_joint");
+    back_right_joint_.joint_ = effort_joint_interface->getHandle("right_back_wheel_joint");
+  }
+  catch (const hardware_interface::HardwareInterfaceException& e)
+  {
+    ROS_ERROR("[HeroGimbalController] getHandle failed: %s", e.what());
+    return false;
+  }
   cmd_vel_sub_ = controller_nh.subscribe<geometry_msgs::Twist>(
       "cmd_vel", 1, &HeroChassisController::cmdVelCallback, this);
   chassis_cmd_sub_ = controller_nh.subscribe<rm_msgs_exam::ChassisCmd>(
@@ -310,9 +317,6 @@ void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::Con
         break;
       default:
         debug_pid = nullptr;
-        // ROS_WARN_THROTTLE(1.0,
-        //                   "[HerochassisController] unknown debug_id = %d (expect 1=yaw, 2=pitch)",
-        //                   debug_id);
         return;
     }
     // setGains(p, i, d, i_max, i_min)
@@ -322,10 +326,6 @@ void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::Con
                         10.0,         // i_max
                         -10.0);       // i_min
   }
-  // front_left_joint_.pid_.setGains(kp, ki, kd, 20, -20);
-  // front_right_joint_.pid_.setGains(kp, ki, kd, 20, -20);
-  // back_left_joint_.pid_.setGains(kp, ki, kd, 20, -20);
-  // back_right_joint_.pid_.setGains(kp, ki, kd, 20, -20);
 }
 
 void HeroChassisController::jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg)
