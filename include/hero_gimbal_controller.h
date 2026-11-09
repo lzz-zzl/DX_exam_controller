@@ -16,6 +16,7 @@
 #include <PID.h>
 #include <hardware_interface/imu_sensor_interface.h>
 #include <control_toolbox/pid.h>
+#include <hero_chassis_controller/GimbalControllerConfig.h>
 
 namespace hero_gimbal_controller
 {
@@ -103,13 +104,21 @@ private:
   Gimbal_joint yaw_joint_, pitch_joint_;
   std::string imu_name_{};
   hardware_interface::ImuSensorHandle imu_sensor_handle_;
-  // double
+
+  // Gravity Compensation
+  geometry_msgs::Vector3 mass_origin_;
+  double gimbal_mass_{};
+  double gravity_{};
+  bool enable_gravity_compensation_{};
+  double gravityFeedForward();
 
   void gimbalCmdCallback(const rm_msgs_exam::GimbalCmd::ConstPtr& msg);
 
   void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
   void debugCallback(const std_msgs::Float64MultiArray::ConstPtr& msg);
+
+  void reconfigureCallback(hero_chassis_controller::GimbalControllerConfig& config, uint32_t level);
 };
 } // namespace hero_gimbal_controller
 

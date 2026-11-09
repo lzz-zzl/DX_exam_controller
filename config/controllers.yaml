@@ -11,7 +11,11 @@ controller:
   hero_gimbal_controller:
     type: hero_gimbal_controller/HeroGimbalController
     imu_name: gimbal_imu
-
+    enable_gravity_compensation_: true
+    gravity_: 9.81
+    gimbal_mass: 1.488528
+    mass_origin_x: 0.08347
+    mass_origin_z: 0.03654
 
   joint_state_controller:
     type: joint_state_controller/JointStateController

@@ -31,7 +31,7 @@ yaw_target = 0.0
 pitch_target = 0.0
 yaw_vel_target = 0.0
 pitch_vel_target = 0.0
-gimbal_state = 0.0
+gimbal_state = 1.0
 chassis_state = 2.0
 debug_id = 0
 

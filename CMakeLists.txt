@@ -39,7 +39,7 @@ find_package(catkin REQUIRED
 ## DEPENDS: system dependencies of this project that dependent projects also need
 
 generate_dynamic_reconfigure_options(
-        #        cfg/GimbalBase.cfg
+        cfg/Gimbal_controller.cfg
 )
 
 catkin_package(

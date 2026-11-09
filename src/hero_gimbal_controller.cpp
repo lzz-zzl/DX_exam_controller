@@ -59,7 +59,8 @@ void Gimbal_joint::update(ros::Duration period)
   {
     double err = pos_target_ - world_pos;
     err = std::remainder(err, 2 * PI);
-    joint_.setCommand(pos_pid_.computeCommand(err, period) + tor_bias_);
+    double p_err = pos_pid_.computeCommand(err, period) - world_vel;
+    joint_.setCommand(vel_pid_.computeCommand(p_err, period) + tor_bias_);
   }
 }
 
@@ -70,15 +71,21 @@ bool HeroGimbalController::init(hardware_interface::EffortJointInterface* effort
                                 ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh)
 {
   controller_nh.param("gimbal_cmd_timeout", gimbal_cmd_timeout_, 0.5);
+  controller_nh.param("mass_origin_x", mass_origin_.x, 0.0);
+  controller_nh.param("mass_origin_z", mass_origin_.z, 0.0);
+  controller_nh.param("gravity_", gravity_, 9.81);
+  controller_nh.param("gimbal_mass", gimbal_mass_, 0.0);
+  controller_nh.param("enable_gravity_compensation_", enable_gravity_compensation_, false);
+
   double init_yaw_kp_{}, init_yaw_ki_{}, init_yaw_kd_{}, int_yaw_i_limit_{},
          init_pitch_kp_{}, init_pitch_ki_{}, init_pitch_kd_{}, int_pitch_i_limit_{};
   controller_nh.param("pid_yaw_kp", init_yaw_kp_, 7.0);
-  controller_nh.param("pid_yaw_ki", init_yaw_ki_, 0.0);
-  controller_nh.param("pid_yaw_kd", init_yaw_kd_, 1.4);
+  controller_nh.param("pid_yaw_ki", init_yaw_ki_, 1.0);
+  controller_nh.param("pid_yaw_kd", init_yaw_kd_, 0.0);
   controller_nh.param("int_yaw_i_limit", int_yaw_i_limit_, 2.0);
   controller_nh.param("pid_pitch_kp", init_pitch_kp_, 8.0);
-  controller_nh.param("pid_pitch_ki", init_pitch_ki_, 0.2);
-  controller_nh.param("pid_pitch_kd", init_pitch_kd_, 1.0);
+  controller_nh.param("pid_pitch_ki", init_pitch_ki_, 1.0);
+  controller_nh.param("pid_pitch_kd", init_pitch_kd_, 0.0);
   controller_nh.param("int_pitch_i_limit", int_pitch_i_limit_, 2.0);
   debug_pub_ = controller_nh.advertise<std_msgs::Float64MultiArray>("/hero_gimbal_controller/pub_debug", 1);
   gimbal_cmd_sub_ = controller_nh.subscribe("/controller/hero_gimbal_controller/cmd", 1,
@@ -142,6 +149,14 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
     yaw_joint_.setPos(gimbal_cmd_msg_.pos_yaw);
     pitch_joint_.setPos(gimbal_cmd_msg_.pos_pitch);
   }
+  // Gravity Compensation
+  yaw_joint_.setTorBias(0.0);
+  pitch_joint_.setTorBias(0.0);
+  if (enable_gravity_compensation_)
+  {
+    pitch_joint_.setTorBias(gravityFeedForward());
+  }
+
   yaw_joint_.update(period);
   pitch_joint_.update(period);
 
@@ -163,6 +178,17 @@ void HeroGimbalController::update(const ros::Time& time, const ros::Duration& pe
     debug_pub_.publish(debug_pub_msgs);
   }
   //debug endf
+}
+
+
+double HeroGimbalController::gravityFeedForward()
+{
+  Eigen::Vector3d gravity(0, 0, -gravity_ * gimbal_mass_);
+  Eigen::AngleAxisd pitch_rot(pitch_joint_.world_pos, Eigen::Vector3d::UnitY());
+  Eigen::Vector3d gravity_rotated = pitch_rot * gravity;
+  Eigen::Vector3d mass_origin(mass_origin_.x, 0, mass_origin_.z);
+  test[0] = -mass_origin.cross(gravity_rotated).y();
+  return -mass_origin.cross(gravity_rotated).y();
 }
 
 void HeroGimbalController::gimbalCmdCallback(const rm_msgs_exam::GimbalCmd::ConstPtr& msg)
@@ -231,6 +257,11 @@ void HeroGimbalController::debugCallback(const std_msgs::Float64MultiArray::Cons
   else
   {
   }
+}
+
+void HeroGimbalController::reconfigureCallback(hero_chassis_controller::GimbalControllerConfig& config, uint32_t level)
+{
+  // mass_origin_ = config.gimbal_mass;
 }
 
 PLUGINLIB_EXPORT_CLASS(hero_gimbal_controller::HeroGimbalController, controller_interface::ControllerBase)
