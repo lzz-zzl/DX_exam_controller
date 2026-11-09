@@ -305,6 +305,9 @@ void HeroChassisController::debugCallback(const std_msgs::Float64MultiArray::Con
       case 1:
         debug_pid = &follow_pid_;
         break;
+      case 2:
+        debug_pid = &front_left_joint_.pid_;
+        break;
       default:
         debug_pid = nullptr;
         // ROS_WARN_THROTTLE(1.0,

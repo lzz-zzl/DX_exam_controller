@@ -99,9 +99,9 @@ private:
 
   std_msgs::Float64MultiArray debug_pub_msgs;
 
-  geometry_msgs::Twist cmd_vel_;         //初始命令速度
-  geometry_msgs::Twist chassis_cmd_vel_; // 确保在地面坐标系下加速度限制
-  rm_msgs_exam::ChassisCmd chassis_cmd_;
+  geometry_msgs::Twist cmd_vel_{};         //初始命令速度
+  geometry_msgs::Twist chassis_cmd_vel_{}; // 确保在地面坐标系下加速度限制
+  rm_msgs_exam::ChassisCmd chassis_cmd_{};
 
   //地盘
   double wheel_base = 0.4;
