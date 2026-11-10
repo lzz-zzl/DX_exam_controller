@@ -188,7 +188,7 @@ void HeroChassisController::update(const ros::Time& time, const ros::Duration& p
       ROS_WARN("[hero_chassis_controller] state mismatch!");
       break;
   }
-  chassis_acc_limit(cmd_vel_, chassis_cmd_vel_, chassis_yaw_, period);
+  chassisAccLimit(cmd_vel_, chassis_cmd_vel_, chassis_yaw_, period);
 
   {
     double front_left_vel_target = chassis_cmd_vel_.linear.x - chassis_cmd_vel_.linear.y - chassis_cmd_vel_.angular.z *
