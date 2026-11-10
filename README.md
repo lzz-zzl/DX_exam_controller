@@ -3,7 +3,7 @@
 ## Overview
 
 This is controller example/template for the assignment (see Chinese [requirement](doc/requirement.md)) which assess
-DynamicX reserve member.
+DynamicX reserve Dxam.
 
 **Keywords:** RoboMaster, ROS, ros_control
 
