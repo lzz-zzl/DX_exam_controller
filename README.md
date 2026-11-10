@@ -1,4 +1,4 @@
-# simple_chassis_controller
+# hero_chassis_controller
 
 ## Overview
 
